@@ -1,8 +1,10 @@
 # =============================================================================
 #  marcador_18s.yaml
 # -----------------------------------------------------------------------------
-#  Parámetros de nf-core/ampliseq para amplicones de 18S de eucariotas. El script 03 lo pasa a Nextflow con -params-file cuando se define # a MARCADOR="18s". Ajusta los primers y la base de datos a tu experimento. El
-#  catálogo de primers está en primers_18S.tsv.
+#  Parámetros de nf-core/ampliseq para amplicones de 18S de eucariotas. El
+#  script 03 lo pasa a Nextflow con -params-file cuando se define a MARCADOR="18s".
+#  Ajusta los primers y la base de datos a tu experimento, el catálogo de primers
+#  está en primers_18S.tsv.
 # =============================================================================
 
 
@@ -14,15 +16,15 @@ RV_primer: "CACAGACCTGTTATTGC"
 #FW_primer: "CCAGCASCYGCGGTAATTCC"
 #RV_primer: "ACTTTCGTTCTTGATYRA"
 
-# Base de datos de referencia para la inferencia  taxonómica.
+# Base de datos de referencia para la inferencia taxonómica.
 # Cada una se usa por un clasificador distinto en ampliseq:
 #   pr2   (dada_ref_taxonomy):  base específica de eucariotas, a través de DADA2. Es la
 #         recomendada para 18S de protistas.
 #   silva (qiime_ref_taxonomy): la SILVA preformateada de QIIME2 es la combinada
 #         16S/18S y sí sirve para eucariotas, pero a través de QIIME2.
-# Ojo: la SILVA de DADA2 no sirve para 18S. La documentación de ampliseq la marca como 
-# optimizada para Bacteria y Archaea. Por eso, si usas
-# SILVA, aquí va a través de qiime_ref_taxonomy y no por dada_ref_taxonomy.
+# Ojo: la SILVA de DADA2 no sirve para 18S. La documentación de ampliseq la marca
+# como optimizada para Bacteria y Archaea. Por eso, si usas SILVA, aquí va a través
+# de qiime_ref_taxonomy y no por dada_ref_taxonomy.
 
 # PR2 por DADA2
 dada_ref_taxonomy: "pr2=5.1.0"

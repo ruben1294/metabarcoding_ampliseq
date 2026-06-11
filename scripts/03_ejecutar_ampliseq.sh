@@ -11,6 +11,7 @@
 #  Guarda el comando exacto, el log y una copia de los parámetros usados.
 #
 #  Uso:   bash scripts/03_ejecutar_ampliseq.sh
+#         bash scripts/03_ejecutar_ampliseq.sh --marcador its   (sobreescribe parametros.sh)
 #         bash scripts/03_ejecutar_ampliseq.sh --dry-run   (solo prepara, no corre)
 #         bash scripts/03_ejecutar_ampliseq.sh -y          (no pide confirmación)
 # =============================================================================
@@ -26,20 +27,27 @@ source "scripts/lib/entorno.sh"
 source "scripts/lib/marcador.sh"
 iniciar_registro "03_ejecutar_ampliseq"
 
+# Opciones de línea de comandos
+# --marcador <its|16s|18s> sobreescribe el MARCADOR de parametros.sh solo para esta corrida
+DRY_RUN="no"; ASUMIR_SI="no"
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --dry-run)     DRY_RUN="si" ;;
+        -y|--yes)      ASUMIR_SI="si" ;;
+        -m|--marcador)
+            shift; [ $# -gt 0 ] || { log_error "--marcador necesita un valor (its, 16s o 18s)"; exit 1; }
+            MARCADOR="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')" ;;
+        --marcador=*)
+            MARCADOR="$(printf '%s' "${1#*=}" | tr '[:upper:]' '[:lower:]')" ;;
+        *) log_error "Argumento desconocido: '$1' (usa --marcador, --dry-run o -y)"; exit 1 ;;
+    esac
+    shift
+done
+
 # Definimos el entorno donde correrá el pipeline y el marcador a analizar
 seleccionar_entorno    # fija MOTOR y CONFIG_RECURSOS
-seleccionar_marcador   # fija CONFIG_MARCADOR
+seleccionar_marcador   # fija CONFIG_MARCADOR (respeta el --marcador de arriba si se pasó)
 activar_trap_errores
-
-# Opciones de línea de comandos
-DRY_RUN="no"; ASUMIR_SI="no"
-for arg in "$@"; do
-    case "$arg" in
-        --dry-run) DRY_RUN="si" ;;
-        -y|--yes)  ASUMIR_SI="si" ;;
-        *) log_error "Argumento desconocido: '$arg' (usa --dry-run o -y)"; exit 1 ;;
-    esac
-done
 
 # Activamos el entorno con Nextflow y Java
 if command -v conda >/dev/null 2>&1; then
@@ -122,22 +130,34 @@ else
     ENTRADA=( --input_folder "$CARPETA_FASTQ" )
 fi
 
-# 4) Ensamblamos el comando de Nextflow para correr el pipeline
-#   recursos por -c (entorno) y parámetros por -params-file (marcador)
+# 4) Preparamos el params-file de la corrida: copia del YAML del marcador más los
+#    toggles dinámicos. Los booleanos van aquí y no por CLI porque nf-schema los
+#    valida estricto: un flag suelto (--illumina_pe_its) llega como string "true"
+#    y la validación lo rechaza; en el YAML true es un booleano de verdad.
+#    El archivo además queda como evidencia de lo que se corrió.
+PARAMS_RUN="$SALIDA/params_usados_${SELLO}.yaml"
+cp "$CONFIG_MARCADOR" "$PARAMS_RUN"
+{
+    echo ""
+    echo "# Toggles añadidos por 03_ejecutar_ampliseq.sh (sello: $SELLO)"
+    # Lecturas ITS pareadas: avisa a ampliseq del posible read-through
+    if [ "$MARCADOR" = "its" ] && [ "$DISENO_LECTURAS" = "paired" ]; then echo "illumina_pe_its: true"; fi
+    # Primers dobles (toggle de parametros.sh)
+    if [ "$DOBLE_PRIMER" = "si" ]; then echo "double_primer: true"; fi
+} >> "$PARAMS_RUN"
+
+# 5) Ensamblamos el comando de Nextflow para correr el pipeline
+#   recursos por -c (entorno) y parámetros por -params-file (marcador + toggles)
 CMD=( nextflow run nf-core/ampliseq
       -r "$VERSION_PIPELINE"
       -profile "$MOTOR"
-      -params-file "$CONFIG_MARCADOR"
+      -params-file "$PARAMS_RUN"
       -c "$CONFIG_RECURSOS"
       "${ENTRADA[@]}"
       --outdir "$SALIDA"
       -resume
       -ansi-log false )
 
-# Lecturas ITS pareadas: avisa a ampliseq del posible read-through
-[ "$MARCADOR" = "its" ] && [ "$DISENO_LECTURAS" = "paired" ] && CMD+=( --illumina_pe_its )
-# Primers dobles (toggle de parametros.sh)
-[ "$DOBLE_PRIMER" = "si" ] && CMD+=( --double_primer )
 # Metadatos (solo si existe el archivo)
 [ -n "$METADATA" ] && [ -f "$METADATA" ] && CMD+=( --metadata "$METADATA" )
 # Parámetros extra del usuario (avanzado)
@@ -146,14 +166,11 @@ if [ -n "$EXTRA_PARAMS" ]; then
     CMD+=( $EXTRA_PARAMS )
 fi
 
-# 5) Copia de los parámetros usados (evidencia por corrida)
-cp "$CONFIG_MARCADOR" "$SALIDA/params_usados_${SELLO}.yaml"
-
 # 6) Mostramos el resumen
 cabecera_registro "EJECUCIÓN DE nf-core/ampliseq. Proyecto: $PROYECTO"
 log_info "  Pipeline:        nf-core/ampliseq r${VERSION_PIPELINE}"
 log_info "  Entorno:         $ENTORNO  (recursos: $CONFIG_RECURSOS)"
-log_info "  Marcador:        $MARCADOR  (parámetros: $CONFIG_MARCADOR)"
+log_info "  Marcador:        $MARCADOR  (parámetros: $CONFIG_MARCADOR → $PARAMS_RUN)"
 log_info "  Motor:           $MOTOR"
 log_info "  Entrada:         ${ENTRADA[*]}"
 log_info "  Primers:         FW=$FW${RV:+  RV=$RV}"
