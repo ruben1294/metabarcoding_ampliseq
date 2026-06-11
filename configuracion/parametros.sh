@@ -14,7 +14,7 @@
 
 # 1) Identidad del proyecto
 # Nombre corto del proyecto (solo para fines informativos, se guarda en los registros).
-PROYECTO="ITS_hongos"
+PROYECTO="prueba_16S"
 
 
 # 2) Entorno de ejecución (local o HPC)
@@ -24,7 +24,7 @@ PROYECTO="ITS_hongos"
 #             en los nodos que lo tienen (en OMICA: nodo27 y nodo28).
 # Si lo dejas vacío, el script te preguntará al arrancar (00, 02 y 03).
 # Cada entorno tiene su propio archivo de recursos (ver sección 9).
-ENTORNO=""
+ENTORNO="local"
 
 
 # 3) Marcador a analizar (ITS o 16S)
@@ -34,7 +34,7 @@ ENTORNO=""
 # Si lo dejas vacío, el script te preguntará al arrancar (02 y 03).
 # Los parámetros de cada marcador (primers, base de datos, región) viven en su
 # propio archivo .yaml; edítalos ahí, no aquí (ver sección 9).
-MARCADOR=""
+MARCADOR="16s"
 
 
 # 4) Motor de ejecución (cómo se aíslan los programas)
@@ -53,7 +53,7 @@ ENV_LANZADOR="ampliseq-lanzador"
 
 # 5) Versiones ancladas (clave para la reproducibilidad)
 VERSION_PIPELINE="2.17.0"     # versión de nf-core/ampliseq
-VERSION_NEXTFLOW="24.10.5"    # versión de Nextflow (déjalo vacío "" para la más nueva)
+VERSION_NEXTFLOW=""           # Nextflow: vacío instala siempre la más reciente; ampliseq 2.17.0 pide >=25.04.8
 
 
 # 6) Datos de entrada (los FASTQ de secuenciación)

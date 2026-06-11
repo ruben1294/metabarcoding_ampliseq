@@ -92,6 +92,14 @@ else
       || { log_warn "No se pudo anclar la versión, reintentando flexible…"
            conda create -n "$ENV_LANZADOR" -y "${PAQUETES_FLEX[@]}"; }
 fi
+
+# Sin versión fija, forzamos la más reciente (conda install no siempre sube la ya instalada).
+if [ -z "${VERSION_NEXTFLOW:-}" ]; then
+    log_info "Sin versión fija: actualizando Nextflow a la más reciente disponible…"
+    conda update -n "$ENV_LANZADOR" -y nextflow \
+      || log_warn "No pude actualizar Nextflow; se queda la versión instalada."
+fi
+
 conda activate "$ENV_LANZADOR"
 log_info "Entorno '$ENV_LANZADOR' activo."
 

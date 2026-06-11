@@ -10,7 +10,7 @@ variantes de secuencia ASV (DADA2), recorte de la región ITS con ITSx (solo en
 ITS), clasificación taxonómica (UNITE para ITS, SILVA para 16S) y análisis de
 diversidad (QIIME2), con reportes finales (MultiQC y reporte resumen).
 
-Dos decisiones gobiernan el flujo y cada una tiene su propio archivo:
+Antes de correr el _pipeline_, hay dos decisiones importantes y cada una tiene su propio archivo:
 
 | Decisión | Opciones | Define | Archivo |
 |---|---|---|---|
