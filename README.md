@@ -1,8 +1,8 @@
-# Análisis de amplicones (ITS de hongos / 16S de procariotas / 18S de microeucariotas) con nf-core/ampliseq
+# Análisis de amplicones (ITS de hongos / 16S de procariotas / 18S de eucariotas) con nf-core/ampliseq
 
 Flujo para analizar amplicones a partir de secuenciación Illumina, con tres
 marcadores posibles: la región ITS (*Internal Transcribed Spacer*) de hongos, el
-gen 16S rDNA de procariotas o el gen 18S rDNA de microeucariotas (protistas).
+gen 16S rDNA de procariotas o el gen 18S rDNA de eucariotas.
 
 Usa [nf-core/ampliseq](https://nf-co.re/ampliseq) (v2.17.0), que ejecuta:
 control de calidad (FastQC), eliminación de *primers* (cutadapt), inferencia de
@@ -55,8 +55,8 @@ qiime2_ampliseq/
 
 ## 2. Decisiones del flujo
 
-Al iniciar, los scripts te preguntan dónde correrás el flujo y qué marcador analizarás (si no las has fijado antes). Para no responder cada vez, fíjalas en `configuracion/parametros.sh`; en un HPC es
-obligatorio fijarlas si lanzas sin terminal interactiva.
+Al iniciar, los scripts te preguntan dónde correrás el flujo y qué marcador analizarás (si no las has fijado antes). Para no responder cada vez, definelas en `configuracion/parametros.sh`; en un HPC es
+obligatorio definirlas si lanzas el _pipeline_ sin terminal interactiva.
 
 ### a) Entorno: `local` o `hpc`
 
@@ -65,7 +65,7 @@ obligatorio fijarlas si lanzas sin terminal interactiva.
 - **`hpc`** → un clúster con SLURM. Manda cada tarea a la cola y la corre con
   Docker, con `configuracion/recursos_hpc.config`.
 
-En el HPC de OMICA (CICESE) el motor es Docker, pero actualmente este solo está instalado en los siguientes nodos: nodo5, nodo27 y nodo28. La arquitectura elegida es que el _job_ maestro corre en el nodo5, y nodo27 y nodo28 se usan para lanzar los _jobs_ hijos que realizan el análisis del _pipeline_. Todo esto ya viene puesto en `recursos_hpc.config` y en `scripts/lanzar_hpc.slurm`. Ajusta tu cuenta, partición o los nodos si tu clúster es distinto.
+En el HPC de OMICA (CICESE) el motor es Docker, pero actualmente este solo está instalado en los siguientes nodos: nodo5, nodo27 y nodo28. La arquitectura elegida es que el _job_ maestro corre en el nodo5, y nodo27 y nodo28 se usan para lanzar los _jobs_ hijos que realizan el análisis del _pipeline_. Todo esto ya viene configurado en `recursos_hpc.config` y en `scripts/lanzar_hpc.slurm`. Ajusta tu cuenta, partición o los nodos si tu clúster es distinto.
 
 Para correr el _pipeline_ en el HPC, lanza el _job_ maestro (tiene que permanecer vivo durante todo el análisis):
 
@@ -81,7 +81,7 @@ Como alternativa, corre `bash scripts/03_ejecutar_ampliseq.sh` a mano desde nodo
   `configuracion/marcador_its.yaml`.
 - **`16s`** → procariotas. Gen 16S rDNA, base de datos predeterminada SILVA. Parámetros en
   `configuracion/marcador_16s.yaml`.
-- **`18s`** → microeucariotas/protistas. Gen 18S rDNA, base de datos predeterminada PR2.
+- **`18s`** → eucariotas. Gen 18S rDNA, base de datos predeterminada PR2.
   Parámetros en `configuracion/marcador_18s.yaml`.
 
 Cada marcador trae sus _primers_ y su base de datos en un archivo `.yaml` que se pasa a Nextflow con `-params-file`. Ahí es donde debes editar los parámetros del análisis.
@@ -126,12 +126,12 @@ Para validar el flujo sin tus datos, baja un conjunto pequeño y estándar
 bash scripts/descargar_datos_prueba.sh 16s   # 16S pareado (515F/806R)
 # o:  bash scripts/descargar_datos_prueba.sh its   # ITS single-end de Illumina
 
-# ajusta MARCADOR y DISENO_LECTURAS según el caso (el script te lo recuerda)
+# ajusta el MARCADOR y DISENO_LECTURAS según sea el caso (el script te lo recuerda)
 bash scripts/01_generar_samplesheet.sh
 bash scripts/03_ejecutar_ampliseq.sh
 ```
 
-El entorno (local o HPC) es independiente: el mismo dato sirve para ambos. La primera corrida baja la base de datos taxonómica (que se guarda en caché).
+El entorno (local o HPC) es independiente, el mismo dato sirve para ambos. La primera corrida baja la base de datos de referencia para la inferencia taxonómica (que se guarda en caché).
 
 ---
 
@@ -154,18 +154,17 @@ que corresponda. Los _presets_ más comunes son:
 - **18S:** `TAReuk454FWD1`/`TAReukREV3` (V4), `Euk1391F`/`EukBr` (V9).
 
 > **Nota:** la base `dada_ref_taxonomy` debe corresponder al marcador (UNITE solo
-> sirve para ITS; SILVA, GTDB o Greengenes para 16S; PR2 para 18S).
+> sirve para ITS; SILVA, GTDB o Greengenes para 16S; y PR2 o SILVA para 18S).
 >
 > **18S con SILVA:** la SILVA de DADA2 que trae ampliseq está optimizada para
-> Bacteria/Archaea y su documentación la marca *no apta para eucariotas*. Para
-> usar SILVA en 18S hay que ir por el clasificador de QIIME2: en
+> Bacteria/Archaea y su documentación la marca no apta para eucariotas. Para
+> usar SILVA en 18S hay que usar el clasificador de QIIME2: en
 > `marcador_18s.yaml`, comenta `dada_ref_taxonomy: "pr2=5.1.0"` y descomenta
 > `qiime_ref_taxonomy: "silva=138"` (la SILVA de QIIME2 es la combinada 16S/18S).
-> Esa vía es más lenta y pesada que PR2 con DADA2.
 
 ---
 
-Todo el flujo es reanudable. Si se llegara a interrumpir, vuelve a correr el script 03 y Nextflow continúa donde se quedó gracias a `-resume`.
+Todo el flujo es reanudable. Si se llegara a interrumpir, vuelve a correr el script 03 y Nextflow continúa donde se quedó gracias a la etiqueta `-resume`.
 
 ---
 
@@ -176,10 +175,10 @@ Dentro de `resultados/<PROYECTO>/` encontrarás (entre otros):
 | Carpeta | Contenido |
 |---|---|
 | `dada2/` | Tabla de ASVs, secuencias representativas y estadísticas |
-| `cutadapt/` | Reporte de eliminación de primers |
+| `cutadapt/` | Reporte de eliminación de _primers_ |
 | `itsx/` | Secuencias ITS recortadas (solo en ITS) |
 | `dada2/<bd>/` | Taxonomía asignada (UNITE o SILVA) |
-| `qiime2/` | Diversidad alfa/beta, abundancias relativas (si hay metadatos) |
+| `qiime2/` | Diversidad alfa/beta y abundancias relativas (si hay metadatos) |
 | `multiqc/` | Reporte de calidad agregado (abrir el `.html`) |
 | `summary_report/` | Reporte resumen del análisis (abrir el `.html`) |
 | `pipeline_info/` | Versiones, tiempos y trazabilidad de la corrida |

@@ -36,7 +36,7 @@ ENTORNO="local"
 # Si lo dejas vacío, el script te preguntará al arrancar (02 y 03).
 # Los parámetros de cada marcador (primers, base de datos, región) viven en su
 # propio archivo .yaml. Edítalos ahí, no aquí (ver sección 9).
-MARCADOR="16s"
+MARCADOR="its"
 
 
 # 4) Motor de ejecución (cómo se aíslan los programas)
@@ -65,7 +65,7 @@ CARPETA_FASTQ="datos/crudos"
 # Diseño de las lecturas:
 #   "paired" = pareadas (R1 + R2). Lo normal en Illumina.
 #   "single" = individuales (solo R1).
-DISENO_LECTURAS="paired"
+DISENO_LECTURAS="single"
 
 # Hoja de muestras que genera el script 01 a partir de CARPETA_FASTQ.
 SAMPLESHEET="configuracion/samplesheet.tsv"

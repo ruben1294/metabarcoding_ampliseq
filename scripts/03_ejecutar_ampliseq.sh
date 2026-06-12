@@ -140,6 +140,8 @@ cp "$CONFIG_MARCADOR" "$PARAMS_RUN"
 {
     echo ""
     echo "# Toggles añadidos por 03_ejecutar_ampliseq.sh (sello: $SELLO)"
+    # Lecturas single-end (solo R1): sin esto ampliseq asume pareado y exige fastq_2
+    if [ "$DISENO_LECTURAS" = "single" ]; then echo "single_end: true"; fi
     # Lecturas ITS pareadas: avisa a ampliseq del posible read-through
     if [ "$MARCADOR" = "its" ] && [ "$DISENO_LECTURAS" = "paired" ]; then echo "illumina_pe_its: true"; fi
     # Primers dobles (toggle de parametros.sh)
