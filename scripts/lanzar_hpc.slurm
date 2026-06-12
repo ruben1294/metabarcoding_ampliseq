@@ -47,7 +47,7 @@ echo "[maestro] repo: $(pwd)"
 
 # conda debe estar en el PATH para que el script 03 active el entorno lanzador.
 # Si en tu clúster viene como módulo, descomenta y ajusta la línea siguiente:
-# module load conda-2023_metagenomica
+module load conda-2023_metagenomica
 if ! command -v conda >/dev/null 2>&1; then
     for base in "$HOME/miniforge3" "$HOME/miniconda3" "$HOME/anaconda3"; do
         if [ -f "$base/etc/profile.d/conda.sh" ]; then
