@@ -51,12 +51,29 @@ MARCADOR="its"
 #   "docker"      = contenedores Docker (local con integración WSL, en HPC corre
 #                   en los nodos de cómputo con Docker).
 #   "singularity" = contenedores Singularity (alternativa en HPC).
-#   "apptainer"   = sucesor de Singularity (alternativa en HPC).
+#   "apptainer"   = sucesor de Singularity. Recomendado en un HPC sin internet: las
+#                   imágenes .sif se precargan una vez y viven en LUSTRE compartido.
 #   "conda"       = un entorno conda por herramienta, sin contenedor (más lento).
 MOTOR="auto"
 
 # Entorno conda con Nextflow + Java que crea el script 00.
 ENV_LANZADOR="ampliseq-lanzador"
+
+# HPC de OMICA: internet general bloqueado, pero los nodos con Docker (nodo27/28)
+# SÍ alcanzan el registro de contenedores (quay.io), así que con MOTOR=docker
+# Nextflow jala las imágenes al correr. Como la conectividad es intermitente,
+# conviene precargarlas una vez con scripts/precargar_imagenes_docker_hpc.sh.
+# Nodos con Docker donde corren las tareas (debe coincidir con --nodelist de
+# recursos_hpc.config).
+NODOS_TAREAS_DOCKER="nodo27 nodo28"
+
+# Solo para motor apptainer/singularity (si IT lo instala): las imágenes .sif y las
+# bases se precargan una vez en el nodo interactivo y viven en LUSTRE compartido.
+#   DIR_BASES_HPC        carpeta raíz de bases de datos en LUSTRE
+#   DIR_CACHE_SINGULARITY carpeta de imágenes .sif (la llena scripts/precargar_imagenes_hpc.sh)
+# Ajústalas a una ruta donde tengas permiso de escritura.
+DIR_BASES_HPC="/LUSTRE/bioinformatica_data/BD/metagenomica"
+DIR_CACHE_SINGULARITY="$DIR_BASES_HPC/cache_singularity_ampliseq"
 
 
 # 5) Versiones ancladas (clave para la reproducibilidad)

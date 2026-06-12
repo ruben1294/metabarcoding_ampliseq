@@ -57,8 +57,15 @@ if command -v conda >/dev/null 2>&1; then
 fi
 command -v nextflow >/dev/null 2>&1 || { log_error "Nextflow no disponible. Corre: bash scripts/00_instalar_dependencias.sh"; exit 1; }
 
-# Guardamos cachés en el disco grande, para no llenar el disco del sistema
-export NXF_SINGULARITY_CACHEDIR="$DIR_PROYECTO/.cache/singularity"
+# Cachés de Nextflow. En HPC con motor apptainer/singularity las imágenes .sif viven
+# en LUSTRE compartido (precargadas con scripts/precargar_imagenes_hpc.sh) para que
+# los nodos de cómputo, sin internet, las lean. En el resto, caché local del proyecto.
+if [ "$ENTORNO" = "hpc" ] && { [ "$MOTOR" = "apptainer" ] || [ "$MOTOR" = "singularity" ]; }; then
+    export NXF_SINGULARITY_CACHEDIR="${DIR_CACHE_SINGULARITY:-$DIR_PROYECTO/.cache/singularity}"
+    export NXF_APPTAINER_CACHEDIR="$NXF_SINGULARITY_CACHEDIR"
+else
+    export NXF_SINGULARITY_CACHEDIR="$DIR_PROYECTO/.cache/singularity"
+fi
 export NXF_CONDA_CACHEDIR="$DIR_PROYECTO/.cache/conda"
 mkdir -p "$NXF_SINGULARITY_CACHEDIR" "$NXF_CONDA_CACHEDIR" "$DIR_LOGS" "$SALIDA"
 
@@ -105,14 +112,29 @@ fi
 # internet). Sin esto Nextflow intenta bajarlo y falla con "Unknown project".
 if [ "$ENTORNO" = "hpc" ]; then
     export NXF_OFFLINE='true'
-    ASSETS_PIPELINE="${NXF_HOME:-$HOME/.nextflow}/assets/nf-core/ampliseq"
-    if [ ! -d "$ASSETS_PIPELINE" ]; then
-        log_error "No encontré nf-core/ampliseq en la caché ($ASSETS_PIPELINE)."
+    # Verificamos contra la caché real de Nextflow (su ubicación depende de NXF_HOME).
+    # No asumimos una ruta fija: el mismo nextflow que precarga es el que corre aquí,
+    # así que 'nextflow list' refleja lo que el maestro podrá usar.
+    if ! nextflow list 2>/dev/null | grep -qx "nf-core/ampliseq"; then
+        log_error "nf-core/ampliseq no aparece en la caché de Nextflow ('nextflow list' no lo encuentra)."
         log_error "  Los nodos de cómputo no tienen internet. Precárgalo en el nodo interactivo:"
         log_error "    conda activate $ENV_LANZADOR && NXF_OFFLINE=false nextflow pull nf-core/ampliseq -r $VERSION_PIPELINE"
+        log_error "  Mira dónde quedó con: nextflow info nf-core/ampliseq"
         exit 1
     fi
-    log_info "Modo offline (NXF_OFFLINE=true); pipeline desde la caché: $ASSETS_PIPELINE"
+    log_info "Modo offline (NXF_OFFLINE=true); nf-core/ampliseq disponible en la caché de Nextflow."
+
+    # Con apptainer/singularity las imágenes .sif deben estar precargadas en la caché
+    # compartida; en los nodos de cómputo sin internet no se pueden bajar al vuelo.
+    if [ "$MOTOR" = "apptainer" ] || [ "$MOTOR" = "singularity" ]; then
+        if [ -z "$(ls -A "$NXF_SINGULARITY_CACHEDIR" 2>/dev/null)" ]; then
+            log_error "La caché de imágenes está vacía: $NXF_SINGULARITY_CACHEDIR"
+            log_error "  Precárgalas en el nodo interactivo (con internet):"
+            log_error "    bash scripts/precargar_imagenes_hpc.sh"
+            exit 1
+        fi
+        log_info "Imágenes de contenedor desde la caché: $NXF_SINGULARITY_CACHEDIR"
+    fi
 fi
 
 # Existencia de los archivos de cada decisión

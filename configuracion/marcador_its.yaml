@@ -20,3 +20,14 @@ dada_ref_taxonomy: "unite-fungi=10.0"
 
 # Asignar también las hipótesis de especie (SH) de UNITE
 addsh: true
+
+# --- HPC sin internet (offline) ---
+# Las claves de arriba (unite-fungi=10.0) hacen que ampliseq DESCARGUE la base al
+# correr; en los nodos de cómputo sin internet eso falla. Para offline: precarga la
+# base en LUSTRE (DIR_BASES_HPC) en el nodo interactivo y apunta a archivos locales.
+# Comenta 'dada_ref_taxonomy' de arriba y usa la base local (formato DADA2 assignTaxonomy):
+#dada_ref_tax_custom: "/LUSTRE/bioinformatica_data/BD/metagenomica/UNITE/sh_general_release_dynamic_10.0.fasta.gz"
+# El nombre/URL EXACTO del archivo que usa esta versión del pipeline lo sacas con:
+#   grep -iA4 'unite-fungi' ~/.nextflow/assets/.repos/nf-core/ampliseq/conf/ref_databases.config
+# Nota: 'addsh: true' depende de archivos propios de UNITE; si no logras armar el SH
+# local, ponlo en false para la corrida offline.

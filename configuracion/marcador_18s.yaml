@@ -31,3 +31,13 @@ dada_ref_taxonomy: "pr2=5.1.0"
 
 # SILVA 16S/18S por QIIME2. Comenta la línea de arriba y descomenta esta:
 #qiime_ref_taxonomy: "silva=138"
+
+# --- HPC sin internet (offline) ---
+# Las claves de arriba DESCARGAN la base al correr; offline eso falla. Precarga la
+# base en LUSTRE (DIR_BASES_HPC) en el nodo interactivo y apunta a archivos locales.
+# Por DADA2 (PR2, formato assignTaxonomy):
+#dada_ref_tax_custom: "/LUSTRE/bioinformatica_data/BD/metagenomica/PR2/pr2_version_5.1.0_SSU_dada2.fasta.gz"
+# O por QIIME2 (SILVA preformateada de QIIME2, clasificador entrenado):
+#qiime_ref_tax_custom: "/LUSTRE/bioinformatica_data/BD/metagenomica/SILVA/silva-138-99-nb-classifier.qza"
+# El nombre/URL EXACTO que usa esta versión del pipeline lo sacas con:
+#   grep -iA4 'pr2\|silva' ~/.nextflow/assets/.repos/nf-core/ampliseq/conf/ref_databases.config

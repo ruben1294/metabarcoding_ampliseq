@@ -14,3 +14,12 @@ RV_primer: "GGACTACNVGGGTWTCTAAT"
 # Base de datos de referencia para inferencia taxonómica:
 #   silva=138. Puedes usar cualquiera: gtdb, greengenes2, rdp, etcétera. Coloca la versión después de un '='.
 dada_ref_taxonomy: "silva=138"
+
+# --- HPC sin internet (offline) ---
+# La clave de arriba (silva=138) DESCARGA la base al correr; offline eso falla.
+# Precarga la base en LUSTRE (DIR_BASES_HPC) en el nodo interactivo, comenta la línea
+# de arriba y apunta a los archivos locales (formato DADA2 assignTaxonomy + especie):
+#dada_ref_tax_custom: "/LUSTRE/bioinformatica_data/BD/metagenomica/SILVA/silva_nr99_v138_train_set.fa.gz"
+#dada_ref_tax_custom_sp: "/LUSTRE/bioinformatica_data/BD/metagenomica/SILVA/silva_species_assignment_v138.fa.gz"
+# El nombre/URL EXACTO que usa esta versión del pipeline lo sacas con:
+#   grep -iA4 'silva' ~/.nextflow/assets/.repos/nf-core/ampliseq/conf/ref_databases.config

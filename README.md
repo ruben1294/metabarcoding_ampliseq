@@ -43,6 +43,8 @@ qiime2_ampliseq/
 │   ├── 04_resumen_tiempos.sh          ← arma la tabla de tiempos por proceso de la corrida
 │   ├── lanzar_hpc.sh                  ← lanza el job maestro en el HPC (elige nodo con hueco)
 │   ├── lanzar_hpc.slurm               ← script SLURM del job maestro (lo envía el wrapper)
+│   ├── precargar_imagenes_docker_hpc.sh ← precarga imágenes Docker en nodo27/28 (HPC)
+│   ├── precargar_imagenes_hpc.sh      ← precarga imágenes .sif en LUSTRE (si hay Apptainer)
 │   ├── descargar_datos_prueba.sh      ← baja un set pequeño y estándar para probar
 │   └── lib/                           ← funciones comunes (registro, entorno y marcador)
 ├── datos/crudos/                       ← ⬅️ pon aquí tus FASTQ (.fastq.gz)
@@ -74,6 +76,16 @@ bash scripts/lanzar_hpc.sh
 ```
 
 También puedes enviarlo directo con `sbatch scripts/lanzar_hpc.slurm` (el maestro va a nodo5), o correr `bash scripts/03_ejecutar_ampliseq.sh` a mano dentro de `tmux` o `screen`.
+
+#### HPC de OMICA (internet restringido)
+
+En OMICA el internet general está bloqueado, pero los nodos con Docker (nodo27/28) **sí alcanzan el registro de contenedores** (`quay.io`). El maestro corre en modo offline para el pipeline (`NXF_OFFLINE=true`, automático en `ENTORNO=hpc`, usa la copia cacheada), y las imágenes se jalan al correr. Pasos:
+
+1. **Pipeline** (lo hace el script 00, en el nodo interactivo con internet): `NXF_OFFLINE=false nextflow pull nf-core/ampliseq -r 2.17.0`.
+2. **Imágenes de contenedor** (`MOTOR="docker"`, el default): la conectividad al registro es intermitente, así que conviene precargarlas una vez en cada nodo: `bash scripts/precargar_imagenes_docker_hpc.sh`. Ese paso también deja cacheados los plugins de Nextflow que el maestro usará offline.
+3. **Bases taxonómicas**: si los nodos no alcanzan los servidores de las bases (UNITE/SILVA/PR2), descárgalas en `DIR_BASES_HPC` (LUSTRE) y apunta el YAML del marcador a los archivos locales (`dada_ref_tax_custom`, etc.). Cada `marcador_*.yaml` trae el scaffolding comentado y el comando para sacar la URL/archivo exacto del pipeline.
+
+Si IT instala **Apptainer/Singularity** (lo más limpio para air-gapped: imágenes `.sif` en disco compartido, sin precargar por nodo), el repo ya está listo: pon `MOTOR="apptainer"` y corre `bash scripts/precargar_imagenes_hpc.sh`. El script 03 valida que el pipeline (y, con apptainer, las imágenes) estén en la caché antes de lanzar.
 
 ### b) Marcador: `its`, `16s` o `18s`
 
