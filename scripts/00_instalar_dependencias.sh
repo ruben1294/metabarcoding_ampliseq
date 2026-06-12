@@ -147,10 +147,14 @@ export NXF_SINGULARITY_CACHEDIR="$DIR_PROYECTO/.cache/singularity"
 export NXF_CONDA_CACHEDIR="$DIR_PROYECTO/.cache/conda"
 mkdir -p "$NXF_SINGULARITY_CACHEDIR" "$NXF_CONDA_CACHEDIR"
 
-# 7) Precargamos el pipeline (se guarda en la caché por si se quiere correr offline)
+# 7) Precargamos el pipeline en la caché (~/.nextflow/assets). Imprescindible en HPC:
+# los nodos de cómputo no tienen internet, así que el maestro corre offline y usa
+# este precargado. Hazlo en el nodo interactivo (el único con salida a internet).
 log_info "Descargando nf-core/ampliseq r${VERSION_PIPELINE} a la caché local…"
-nextflow pull nf-core/ampliseq -r "${VERSION_PIPELINE}" \
-  || log_warn "No se pudo precargar el pipeline, se descargará en la primera ejecución."
+# Forzamos NXF_OFFLINE=false por si el clúster lo trae activado por defecto (eso
+# bloquearía la descarga aunque aquí sí haya internet).
+NXF_OFFLINE=false nextflow pull nf-core/ampliseq -r "${VERSION_PIPELINE}" \
+  || log_warn "No se pudo precargar el pipeline. En local se baja en la primera corrida; en HPC el maestro fallará offline hasta que esto funcione (corre con internet)."
 
 # 8) Verificamos e imprimimos versiones
 log_info "--------------------------------------------------------------------------"

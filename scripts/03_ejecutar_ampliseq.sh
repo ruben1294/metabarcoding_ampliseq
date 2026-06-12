@@ -99,6 +99,22 @@ else
     esac
 fi
 
+# En HPC el maestro puede caer en un nodo de cómputo (nodo27/nodo28) sin salida a
+# internet, así que corremos Nextflow offline y usamos el pipeline ya descargado en
+# la caché. Ese precargado lo hace el script 00 en el nodo interactivo (el único con
+# internet). Sin esto Nextflow intenta bajarlo y falla con "Unknown project".
+if [ "$ENTORNO" = "hpc" ]; then
+    export NXF_OFFLINE='true'
+    ASSETS_PIPELINE="${NXF_HOME:-$HOME/.nextflow}/assets/nf-core/ampliseq"
+    if [ ! -d "$ASSETS_PIPELINE" ]; then
+        log_error "No encontré nf-core/ampliseq en la caché ($ASSETS_PIPELINE)."
+        log_error "  Los nodos de cómputo no tienen internet. Precárgalo en el nodo interactivo:"
+        log_error "    conda activate $ENV_LANZADOR && NXF_OFFLINE=false nextflow pull nf-core/ampliseq -r $VERSION_PIPELINE"
+        exit 1
+    fi
+    log_info "Modo offline (NXF_OFFLINE=true); pipeline desde la caché: $ASSETS_PIPELINE"
+fi
+
 # Existencia de los archivos de cada decisión
 [ -f "$CONFIG_RECURSOS" ] || { log_error "no existe el archivo de recursos: $CONFIG_RECURSOS"; exit 1; }
 [ -f "$CONFIG_MARCADOR" ] || { log_error "no existe el archivo de parámetros: $CONFIG_MARCADOR"; exit 1; }
