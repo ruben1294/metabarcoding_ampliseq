@@ -28,20 +28,20 @@ PROYECTO="prueba_ITS"
 ENTORNO="local"
 
 # Nodos donde puede correr el job maestro en el HPC, en orden de preferencia. El
-# maestro es ligero (2 CPU, 4 GB) y puede compartir nodo27/nodo28 con las tareas.
-# scripts/lanzar_hpc.sh toma el primero con hueco. En OMICA son los nodos con
+# maestro es ligero (2 CPU, 4 GB) y puede compartir con nodo27 y nodo28 con las tareas.
+# scripts/lanzar_hpc.sh elige el primer nodo vacío. En OMICA son los nodos con
 # Docker: nodo5, nodo27 y nodo28.
 NODOS_MAESTRO="nodo5 nodo27 nodo28"
 
 
 # 3) Marcador a analizar (ITS, 16S o 18S)
-# Qué amplicón vas a analizar:
+# ¿Qué amplicón vas a analizar?
 #   "its" = hongos (región ITS).
 #   "16s" = procariotas (gen 16S rDNA).
 #   "18s" = eucariotas (gen 18S rDNA).
 # Si lo dejas vacío, el script te preguntará al arrancar (02 y 03).
-# Los parámetros de cada marcador (primers, base de datos, región) viven en su
-# propio archivo .yaml. Edítalos ahí, no aquí (ver sección 16).
+# Los parámetros de cada marcador (primers, base de datos, región) están en su
+# propio archivo .yaml. Edítalos ahí, no acá (ver sección 16).
 MARCADOR="its"
 
 
@@ -52,23 +52,19 @@ MARCADOR="its"
 #                   en los nodos de cómputo con Docker).
 #   "singularity" = contenedores Singularity (alternativa en HPC).
 #   "apptainer"   = sucesor de Singularity. Recomendado en un HPC sin internet: las
-#                   imágenes .sif se precargan una vez y viven en LUSTRE compartido.
+#                   imágenes .sif se precargan una vez y se guardan en LUSTRE compartido.
 #   "conda"       = un entorno conda por herramienta, sin contenedor (más lento).
 MOTOR="auto"
 
-# Entorno conda con Nextflow + Java que crea el script 00.
+# Entorno conda con Nextflow y Java que crea el script 00.
 ENV_LANZADOR="ampliseq-lanzador"
 
-# HPC de OMICA: internet general bloqueado, pero los nodos con Docker (nodo27/28)
-# SÍ alcanzan el registro de contenedores (quay.io), así que con MOTOR=docker
-# Nextflow jala las imágenes al correr. Como la conectividad es intermitente,
-# conviene precargarlas una vez con scripts/precargar_imagenes_docker_hpc.sh.
 # Nodos con Docker donde corren las tareas (debe coincidir con --nodelist de
 # recursos_hpc.config).
 NODOS_TAREAS_DOCKER="nodo27 nodo28"
 
-# Solo para motor apptainer/singularity (si IT lo instala): las imágenes .sif y las
-# bases se precargan una vez en el nodo interactivo y viven en LUSTRE compartido.
+# Solo para motor apptainer/singularity: las imágenes .sif y las
+# bases se precargan una vez en el nodo interactivo y se guardan en LUSTRE.
 #   DIR_BASES_HPC        carpeta raíz de bases de datos en LUSTRE
 #   DIR_CACHE_SINGULARITY carpeta de imágenes .sif (la llena scripts/precargar_imagenes_apptainer_hpc.sh)
 # Ajústalas a una ruta donde tengas permiso de escritura.
@@ -76,9 +72,9 @@ DIR_BASES_HPC="/LUSTRE/bioinformatica_data/BD/metagenomica"
 DIR_CACHE_SINGULARITY="$DIR_BASES_HPC/cache_singularity_ampliseq"
 
 
-# 5) Versiones ancladas (clave para la reproducibilidad)
+# 5) Versiones del pipeline original y de Nextflow
 VERSION_PIPELINE="2.17.0"     # versión de nf-core/ampliseq
-VERSION_NEXTFLOW=""           # Nextflow: vacío instala siempre la más reciente, ampliseq 2.17.0 pide >=25.04.8
+VERSION_NEXTFLOW=""           # Nextflow: vacío instala siempre la más reciente. El flujo ampliseq 2.17.0 pide >=25.04.8
 
 
 # 6) Datos de entrada (los FASTQ de secuenciación)
@@ -86,7 +82,7 @@ VERSION_NEXTFLOW=""           # Nextflow: vacío instala siempre la más recient
 CARPETA_FASTQ="datos/crudos"
 
 # Diseño de las lecturas:
-#   "paired" = pareadas (R1 + R2). Lo normal en Illumina.
+#   "paired" = pareadas (R1 + R2).
 #   "single" = individuales (solo R1).
 DISENO_LECTURAS="single"
 
@@ -98,7 +94,7 @@ SAMPLESHEET="configuracion/samplesheet.tsv"
 USAR_SAMPLESHEET="si"
 
 # ¿Correr cutadapt dos veces para quitar primers dobles/concatenados?
-#   "si" → activa --double_primer (útil si quedan primers residuales en el reporte)
+#   "si": activa --double_primer
 DOBLE_PRIMER="no"
 
 # ¿Conservar las lecturas sin primer en vez de descartarlas? si/no
@@ -129,13 +125,13 @@ TRUNC_QMIN="25"
 # Fracción mínima de lecturas que el truncado automático debe conservar. --trunc_rmin
 TRUNC_RMIN="0.75"
 
-# Máximo de errores esperados (EE); descarta lecturas por encima. --max_ee
+# Máximo de errores esperados (EE), descarta lecturas por encima. --max_ee
 MAX_EE="2"
 
 # Longitud mínima de lectura tras el filtrado. --min_len
 MIN_LEN="50"
 
-# Longitud máxima de lectura tras el filtrado; vacío = sin límite. --max_len
+# Longitud máxima de lectura tras el filtrado, vacío = sin límite. --max_len
 MAX_LEN=""
 
 # ¿No abortar si una muestra queda con muy pocas lecturas tras el filtrado? si/no
@@ -145,7 +141,7 @@ IGNORAR_FILTRADO_FALLIDO="no"
 
 # 8) Cálculo de variantes de secuencia (ASV) con DADA2
 # Modo de inferencia: independent (cada muestra), pooled (todas juntas) o
-# pseudo (intermedio, más sensible a ASVs raras). --sample_inference
+# pseudo (intermedio). --sample_inference
 SAMPLE_INFERENCE="independent"
 
 
@@ -157,13 +153,13 @@ VSEARCH_CLUSTER="no"
 # Identidad (0-1) para agrupar con vsearch. --vsearch_cluster_id
 VSEARCH_CLUSTER_ID="0.97"
 
-# Filtrar ASVs por SSU rRNA con barrnap; vacío = sin filtro (ej. bac,arc,mito,euk). --filter_ssu
+# Filtrar ASVs por SSU rDNA con barrnap, vacío = sin filtro (ej. bac,arc,mito,euk). --filter_ssu
 FILTER_SSU=""
 
 # Longitud mínima de ASV (pb); vacío = sin filtro. --min_len_asv
 MIN_LEN_ASV=""
 
-# Longitud máxima de ASV (pb); vacío = sin filtro. --max_len_asv
+# Longitud máxima de ASV (pb), vacío = sin filtro. --max_len_asv
 MAX_LEN_ASV=""
 
 # ¿Filtrar ASVs por codones de paro (marcadores codificantes)? si/no
@@ -198,15 +194,15 @@ MIN_SAMPLES="1"
 METADATA=""
 
 
-# 12) Análisis posteriores (diversidad y abundancia; usan los metadatos de arriba)
-# Columnas de metadatos para las pruebas estadísticas (lista por comas);
+# 12) Análisis posteriores (diversidad y abundancia, usan los metadatos de arriba)
+# Columnas de metadatos para las pruebas estadísticas (lista por comas),
 # vacío = ampliseq elige las categorías aptas. --metadata_category
 METADATA_CATEGORY=""
 
 # Columnas de metadatos para los barplots de abundancia relativa media (por comas). --metadata_category_barplot
 METADATA_CATEGORY_BARPLOT=""
 
-# Profundidad mínima de rarefacción para diversidad; descarta muestras por debajo. --diversity_rarefaction_depth
+# Profundidad mínima de rarefacción para diversidad, descarta muestras por debajo. --diversity_rarefaction_depth
 DIVERSITY_RAREFACTION_DEPTH="500"
 
 # Nivel mínimo de aglomeración taxonómica. --tax_agglom_min
@@ -218,15 +214,15 @@ TAX_AGGLOM_MAX="6"
 
 # 13) Reporte de resumen del pipeline
 # Título del reporte Markdown final. --report_title
-REPORT_TITLE="Summary of analysis results"
+REPORT_TITLE="Reporte de resultados de mi análisis de metabarcoding"
 
 
-# 14) Omitir pasos específicos (avanzado). Descomenta y pon "si" para saltarte un paso;
-#     por defecto NO se omite nada. Cada variable activa su bandera --skip_* de ampliseq.
+# 14) Omitir pasos específicos (avanzado). Descomenta y pon "si" para saltarte un paso,
+#     por defecto no se omite nada. Cada variable activa su bandera --skip_* de ampliseq.
 #OMITIR_FASTQC="si"              # --skip_fastqc: control de calidad FastQC
 #OMITIR_CUTADAPT="si"           # --skip_cutadapt: recorte de primers (¡no recomendado!)
 #OMITIR_DADA_QUALITY="si"       # --skip_dada_quality: control de calidad DADA2 (solo si fijas TRUNCLENF/R)
-#OMITIR_BARRNAP="si"            # --skip_barrnap: anotación de SSU rRNA con barrnap
+#OMITIR_BARRNAP="si"            # --skip_barrnap: anotación de SSU rDNA con barrnap
 #OMITIR_QIIME="si"              # --skip_qiime: todos los pasos de QIIME2
 #OMITIR_QIIME_DOWNSTREAM="si"   # --skip_qiime_downstream: pasos de QIIME2 salvo la clasificación taxonómica
 #OMITIR_TAXONOMY="si"           # --skip_taxonomy: la clasificación taxonómica por completo
@@ -243,8 +239,7 @@ REPORT_TITLE="Summary of analysis results"
 
 
 # 15) Salida
-# Carpeta de resultados. Cada proyecto va en su propia subcarpeta (resultados/<PROYECTO>/)
-# para que las corridas de distintos proyectos no se mezclen ni se sobrescriban.
+# Carpeta de resultados. Cada proyecto va en su propia subcarpeta (resultados/<PROYECTO>/).
 # El nombre lo toma de PROYECTO (sección 1).
 SALIDA="resultados/$PROYECTO"
 
@@ -259,19 +254,20 @@ GUARDAR_INTERMEDIOS="si"
 EMAIL=""
 
 
-# 16) Archivos de cada decisión (rara vez se cambian las rutas)
-# Recursos por entorno (sección 2); el script elige según ENTORNO.
+# 16) Archivos de cada decisión (no recomiendo cambiar las rutas)
+
+# Recursos por entorno (sección 2), el script elige según el ENTORNO.
 CONFIG_LOCAL="configuracion/recursos_local.config"
 CONFIG_HPC="configuracion/recursos_hpc.config"
 
-# Parámetros por marcador (sección 3); el script elige según MARCADOR.
+# Parámetros por marcador (sección 3), el script elige según el MARCADOR.
 CONFIG_ITS="configuracion/marcador_its.yaml"
 CONFIG_16S="configuracion/marcador_16s.yaml"
 CONFIG_18S="configuracion/marcador_18s.yaml"
 
 
 # 17) Parámetros extra (avanzado, opcional)
-# Banderas adicionales de nf-core/ampliseq tal cual; se pasan por CLI y mandan sobre
+# Banderas adicionales de nf-core/ampliseq tal cual, se pasan por CLI y mandan sobre
 # el params-file. Si algo ya tiene su variable arriba, edita la variable, no esto.
 #   "--pacbio"                    → lecturas PacBio en vez de Illumina
 #   "--multiple_sequencing_runs"  → la entrada tiene varias corridas de secuenciación

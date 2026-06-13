@@ -6,8 +6,8 @@
 #  Ejecuta el pipeline nf-core/ampliseq. Lee las dos decisiones de
 #  configuracion/parametros.sh (entorno y marcador) y lanza Nextflow con la
 #  versión fija:
-#    entorno  → perfil y recursos (-profile / -c recursos_<entorno>.config)
-#    marcador → parámetros del análisis (-params-file marcador_<marcador>.yaml)
+#    entorno: perfil y recursos (-profile / -c recursos_<entorno>.config)
+#    marcador: parámetros del análisis (-params-file marcador_<marcador>.yaml)
 #  Guarda el comando exacto, el log y una copia de los parámetros usados.
 #
 #  Uso:   bash scripts/03_ejecutar_ampliseq.sh
@@ -119,8 +119,6 @@ if [ "$DRY_RUN" != "si" ]; then
     if [ "$ENTORNO" = "hpc" ]; then
         export NXF_OFFLINE='true'
         # Verificamos contra la caché real de Nextflow (su ubicación depende de NXF_HOME).
-        # No asumimos una ruta fija: el mismo nextflow que precarga es el que corre aquí,
-        # así que 'nextflow list' refleja lo que el maestro podrá usar.
         if ! nextflow list 2>/dev/null | grep -qx "nf-core/ampliseq"; then
             log_error "nf-core/ampliseq no aparece en la caché de Nextflow ('nextflow list' no lo encuentra)."
             log_error "  Los nodos de cómputo no tienen internet. Precárgalo en el nodo interactivo:"
@@ -131,7 +129,7 @@ if [ "$DRY_RUN" != "si" ]; then
         log_info "Modo offline (NXF_OFFLINE=true); nf-core/ampliseq disponible en la caché de Nextflow."
 
         # Con apptainer/singularity las imágenes .sif deben estar precargadas en la caché
-        # compartida; en los nodos de cómputo sin internet no se pueden bajar al vuelo.
+        # compartida, en los nodos de cómputo sin internet no se pueden bajar al vuelo.
         if [ "$MOTOR" = "apptainer" ] || [ "$MOTOR" = "singularity" ]; then
             if [ -z "$(ls -A "$NXF_SINGULARITY_CACHEDIR" 2>/dev/null)" ]; then
                 log_error "La caché de imágenes está vacía: $NXF_SINGULARITY_CACHEDIR"
@@ -171,7 +169,7 @@ ENTRADA=()
 if [ "$USAR_SAMPLESHEET" = "si" ]; then
     [ -f "$SAMPLESHEET" ] || { log_error "no existe $SAMPLESHEET. Corre: bash scripts/01_generar_samplesheet.sh"; exit 1; }
     # En diseño pareado la hoja debe traer la columna fastq_2 con datos en todas
-    # las muestras; si falta, ampliseq aborta a mitad de corrida.
+    # las muestras. Si falta, ampliseq aborta.
     if [ "$DISENO_LECTURAS" = "paired" ]; then
         case "$(head -n1 "$SAMPLESHEET")" in
             *$'\t'fastq_2*) : ;;
@@ -187,12 +185,11 @@ else
     ENTRADA=( --input_folder "$CARPETA_FASTQ" )
 fi
 
-# 4) Preparamos el params-file de la corrida: copia del YAML del marcador más los
+# 4) Preparamos el params-file de la corrida: copia del YAML del marcador y los
 #    parámetros de parametros.sh. Todo va por el params-file (no por CLI) para que
-#    nf-schema reciba el tipo correcto —booleano de verdad, número sin comillas y
-#    cadena entre comillas— y para que el YAML quede como evidencia completa de la
-#    corrida. Un flag booleano suelto por CLI (--illumina_pe_its) llegaría como string
-#    "true" y la validación lo rechazaría.
+#    nf-schema reciba el tipo correcto (booleano de verdad, número sin comillas y
+#    cadena entre comillas) y para que el YAML quede como evidencia completa de la
+#    corrida.
 # Helpers: vuelcan la variable solo si tiene valor, con el formato YAML que toca.
 emitir_bool() { if [ "${2:-no}" = "si" ]; then echo "$1: true"; fi; }    # toggle si/no → 'clave: true'
 emitir_num()  { if [ -n "${2:-}" ]; then echo "$1: $2"; fi; }            # número, sin comillas
