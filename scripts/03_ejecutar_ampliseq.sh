@@ -290,7 +290,11 @@ CMD=( nextflow run nf-core/ampliseq
       -ansi-log false )
 
 # Metadatos (solo si existe el archivo)
-[ -n "$METADATA" ] && [ -f "$METADATA" ] && CMD+=( --metadata "$METADATA" )
+if [ -n "$METADATA" ] && [ -f "$METADATA" ]; then
+    CMD+=( --metadata "$METADATA" )
+else
+    log_warn "No se encontraron metadatos. Se omitirán los análisis de diversidad de QIIME2."
+fi
 # Correo para el resumen de fin de corrida (solo si se definió)
 [ -n "$EMAIL" ] && CMD+=( --email "$EMAIL" )
 # Parámetros extra del usuario (avanzado)

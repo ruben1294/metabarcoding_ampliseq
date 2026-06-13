@@ -2,21 +2,14 @@
 
 [![shellcheck](https://github.com/ruben1294/qiime2_ampliseq/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/ruben1294/qiime2_ampliseq/actions/workflows/shellcheck.yml)
 
-Flujo para hacer un análisis de _metabarcoding_ (también conocido como análisis de amplicones) a partir de secuenciación Illumina, con tres
-marcadores posibles: la región ITS (*Internal Transcribed Spacer*) de hongos, el gen 16S rDNA de procariotas o el gen 18S rDNA de eucariotas.
+Flujo de trabajo para hacer un análisis de _metabarcoding_ (también conocido como análisis de amplicones) a partir de secuencias amplificadas por PCR y secuenciadas con la plataforma Illumina, con tres
+marcadores genéticos posibles: la región ITS (*Internal Transcribed Spacer*) de hongos, el gen 16S rDNA de procariotas o el gen 18S rDNA de eucariotas.
 
 Usa [nf-core/ampliseq](https://nf-co.re/ampliseq) (v2.17.0), que ejecuta:
 control de calidad (FastQC), eliminación de *primers* (cutadapt), inferencia de
 _Amplicon Sequence Variants_ (ASVs) (DADA2), recorte de la región ITS con ITSx (solo en
-ITS), inferencia taxonómica (UNITE para ITS, SILVA para 16S, PR2 para 18S) y
+ITS), inferencia taxonómica y
 análisis de diversidad (QIIME2), con reportes finales (MultiQC y reporte resumen).
-
-Antes de correr el _pipeline_, hay dos decisiones importantes y cada una tiene su propio archivo:
-
-| Decisión | Opciones | Define | Archivo |
-|---|---|---|---|
-| **Entorno** | `local` / `hpc` | recursos y ejecutor | `recursos_<entorno>.config` (vía `-c`) |
-| **Marcador** | `its` / `16s` / `18s` | primers y base de datos | `marcador_<marcador>.yaml` (vía `-params-file`) |
 
 ---
 
@@ -41,58 +34,58 @@ qiime2_ampliseq/
 │   ├── 01_generar_samplesheet.sh      ← crea la hoja de muestras desde los FASTQ
 │   ├── 02_verificar_entorno.sh        ← diagnóstico: verifica que todo esté listo
 │   ├── 03_ejecutar_ampliseq.sh        ← ejecuta el análisis
-│   ├── 04_resumen_tiempos.sh          ← arma la tabla de tiempos por proceso de la corrida
-│   ├── lanzar_hpc.sh                  ← lanza el job maestro en el HPC (elige nodo con hueco)
-│   ├── lanzar_hpc.slurm               ← script SLURM del job maestro (lo envía el wrapper)
+│   ├── 04_resumen_tiempos.sh          ← crea la tabla de tiempos por proceso de la corrida
+│   ├── lanzar_hpc.sh                  ← lanza el job maestro en el HPC
+│   ├── lanzar_hpc.slurm               ← script SLURM del job maestro
 │   ├── precargar_imagenes_docker_hpc.sh ← precarga imágenes Docker en nodo27/28 (HPC)
 │   ├── precargar_imagenes_apptainer_hpc.sh ← precarga imágenes .sif en LUSTRE (si hay Apptainer)
-│   ├── descargar_datos_prueba.sh      ← baja un set pequeño y estándar para probar
+│   ├── descargar_datos_prueba.sh      ← baja un conjunto pequeño y estándar para probar
 │   └── lib/                           ← funciones comunes (registro, entorno y marcador)
 ├── datos/crudos/                       ← ⬅️ pon aquí tus FASTQ (.fastq.gz)
 ├── metadatos/
 │   └── metadatos.tsv.ejemplo           ← plantilla de metadatos (QIIME2)
-├── resultados/<PROYECTO>/              ← resultados, una subcarpeta por proyecto (se crean solas)
-└── logs/<PROYECTO>/                    ← logs de cada corrida, también por proyecto (se crean solas)
+├── resultados/<PROYECTO>/              ← resultados, una subcarpeta por proyecto
+└── logs/<PROYECTO>/                    ← logs de cada corrida, también por proyecto
 ```
 
 ---
 
 ## 2. Decisiones del flujo
 
-Al iniciar, los scripts te preguntan dónde correrás el flujo y qué marcador analizarás (si no las has fijado antes). Para no responder cada vez, defínelas en `configuracion/parametros.sh`. En un HPC es obligatorio definirlas si lanzas el _pipeline_ sin terminal interactiva.
+Al iniciar, los scripts te preguntan dónde correrás el flujo y qué marcador analizarás (si no las has fijado antes). Para no responder cada vez que corres un _script_, defínelas en `configuracion/parametros.sh`. En un HPC es obligatorio definirlas si lanzas el _pipeline_ sin terminal interactiva.
 
-### a) Entorno: `local` o `hpc`
+### a) Entorno donde correrá el _pipeline_
 
-- **`local`** → tu computadora. Usa Docker y los núcleos de la máquina, con los
-  topes de recursos de `configuracion/recursos_local.config`.
-- **`hpc`** → un clúster con SLURM. Manda cada tarea a la cola y la corre con
-  Docker, con `configuracion/recursos_hpc.config`.
+- **`local`**: tu computadora. Usa Docker y los núcleos de la computadora, con los
+  límites de recursos definidos en `configuracion/recursos_local.config`.
+- **`hpc`**: un clúster con SLURM. Manda cada tarea a la cola y la corre con
+  Docker (o el motor elegido), usando los límites definidos en `configuracion/recursos_hpc.config`.
 
-En el HPC de OMICA (CICESE) el motor es Docker, pero actualmente este solo está instalado en los siguientes nodos: nodo5, nodo27 y nodo28. La arquitectura elegida es que el _job_ maestro corre en uno de esos tres nodos (es ligero: 2 CPU, 4 GB) y nodo27 y nodo28 se usan para lanzar los _jobs_ hijos que realizan el análisis del _pipeline_. Como el maestro pesa poco, puede compartir nodo27/nodo28 con las tareas. Todo esto ya viene configurado en `recursos_hpc.config`, en `scripts/lanzar_hpc.slurm` y en `NODOS_MAESTRO` (parametros.sh). Ajusta tu cuenta, partición o los nodos si tu clúster es distinto.
+En el HPC de OMICA (CICESE) el motor es Docker, pero actualmente este solo está instalado en los siguientes nodos: nodo5, nodo27 y nodo28. La arquitectura elegida es que el _job_ maestro corre en uno de esos tres nodos y nodo27 y nodo28 se usan para lanzar los _jobs_ hijos que realizan el análisis del _pipeline_. Como el _job_ maestro pesa poco, puede compartir nodo27/nodo28 con las tareas. Todo esto ya viene configurado en `recursos_hpc.config`, en `scripts/lanzar_hpc.slurm` y en `NODOS_MAESTRO` (parametros.sh). Ajusta tu cuenta, partición o los nodos si tu clúster es diferente.
 
-Para correr el _pipeline_ en el HPC, lanza el _job_ maestro con el wrapper, que elige el primer nodo permitido con hueco (tiene que permanecer vivo durante todo el análisis):
+Para correr el _pipeline_ en el HPC, lanza el maestro con el wrapper, que elige el primer nodo permitido con espacio disponible (tiene que permanecer vivo durante todo el análisis):
 
 ```bash
 bash scripts/lanzar_hpc.sh
 ```
 
-También puedes enviarlo directo con `sbatch scripts/lanzar_hpc.slurm` (el maestro va a nodo5), o correr `bash scripts/03_ejecutar_ampliseq.sh` a mano dentro de `tmux` o `screen`.
+También puedes enviarlo directo con `sbatch scripts/lanzar_hpc.slurm` (el _job_ maestro va a nodo5), o correr `bash scripts/03_ejecutar_ampliseq.sh` a mano dentro de `tmux` o `screen`, aunque te recomiendo usar el _wrapper_.
 
 #### HPC de OMICA
 
-En OMICA el internet general está bloqueado, pero los nodos con Docker (nodo5/nodo27/28) sí conectan con el registro de contenedores (`quay.io`). El *job* maestro corre en modo *offline* para el *pipeline* (`NXF_OFFLINE=true`, automático en `ENTORNO=hpc`, usa la copia cacheada), y las imágenes se jalan al correr. Pasos:
+En OMICA el internet general está bloqueado, pero los nodos con Docker (nodo5/nodo27/nodo28) sí pueden conectarse con el registro de contenedores (`quay.io`). El *job* maestro corre en modo *offline* para el *pipeline* (`NXF_OFFLINE=true`, que se define automáticamente en `ENTORNO=hpc` y usa la copia cacheada), y las imágenes de los contenedores a usar se jalan al correr. Para correr el _pipeline_ allí, los pasos son:
 
 1. ***Pipeline*** (lo hace el script 00, en el nodo interactivo con internet): `NXF_OFFLINE=false nextflow pull nf-core/ampliseq -r 2.17.0`.
-2. **Imágenes de contenedor** (`MOTOR="docker"`, el predeterminado): la conectividad al registro es intermitente, así que conviene precargarlas una vez en cada nodo con: `bash scripts/precargar_imagenes_docker_hpc.sh`. Ese paso también deja cacheados los *plugins* de Nextflow que el *job* maestro usará *offline*.
-3. **Bases de datos taxonómicos**: si los nodos no alcanzan los servidores de las bases (UNITE/SILVA/PR2), descárgalas en `DIR_BASES_HPC` (LUSTRE) y apunta el YAML del marcador a los archivos locales (`dada_ref_tax_custom`, etc.). Cada `marcador_*.yaml` trae el *scaffolding* comentado y el comando para sacar la URL o el archivo exacto del *pipeline*.
+2. **Imágenes de contenedor** (`MOTOR="docker"`, el predeterminado): recomiendo precargar las imágenes una vez en cada nodo con: `bash scripts/precargar_imagenes_docker_hpc.sh`. Ese paso también deja cacheados los *plugins* de Nextflow que el *job* maestro usará *offline*.
+3. **Bases de datos taxonómicos**: si los nodos no pueden conectarse con los servidores de las bases de datos (UNITE/SILVA/PR2), descárgalas en `DIR_BASES_HPC` (LUSTRE) y escribe la ruta en el YAML del marcador a los archivos locales (`dada_ref_tax_custom`, etc.). Cada `marcador_*.yaml` trae el *scaffolding* comentado y el comando para sacar la URL o el archivo exacto del *pipeline*.
 
-### b) Marcador: `its`, `16s` o `18s`
+### b) Marcador genético a analizar
 
-- **`its`** → hongos. Región ITS, base de datos predeterminada UNITE. Parámetros en
+- **`its`**: hongos. Región ITS, base de datos predeterminada UNITE. Parámetros en
   `configuracion/marcador_its.yaml`.
-- **`16s`** → procariotas. Gen 16S rDNA, base de datos predeterminada SILVA. Parámetros en
+- **`16s`**: procariotas. Gen 16S rDNA, base de datos predeterminada SILVA. Parámetros en
   `configuracion/marcador_16s.yaml`.
-- **`18s`** → eucariotas. Gen 18S rDNA, base de datos predeterminada PR2.
+- **`18s`**: eucariotas. Gen 18S rDNA, base de datos predeterminada PR2.
   Parámetros en `configuracion/marcador_18s.yaml`.
 
 Cada marcador trae sus _primers_ y su base de datos en un archivo `.yaml` que se pasa a Nextflow con `-params-file`. Ahí es donde debes editar los parámetros del análisis.
@@ -102,7 +95,7 @@ Cada marcador trae sus _primers_ y su base de datos en un archivo `.yaml` que se
 ## 3. Uso
 
 ```bash
-# 1) Instala dependencias (Java 17, Nextflow, etcétera). Solo la primera vez.
+# 1) Instala las dependencias necesarias (Java 17, Nextflow, etc.), solo la primera vez.
 bash scripts/00_instalar_dependencias.sh
 
 # (copia tus archivos FASTQ en datos/crudos/)
@@ -130,8 +123,7 @@ bash scripts/02_verificar_entorno.sh
 
 ### 3.1 Probar con datos de ejemplo
 
-Para validar el flujo sin tus datos, baja un conjunto pequeño y estándar
-(nf-core/test-datasets) y córrelo:
+Para probar el flujo con un conjunto de datos de prueba, descarga uno de los conjuntos estándar de nf-core/test-datasets y córrelo:
 
 ```bash
 bash scripts/descargar_datos_prueba.sh 16s   # 16S pareado (515F/806R)
@@ -164,13 +156,12 @@ que corresponda. Los _presets_ más comunes son:
 - **16S:** `515F`/`806R` (V4), `341F`/`805R` (V3-V4), `27F`/`1492R` (completo).
 - **18S:** `TAReuk454FWD1`/`TAReukREV3` (V4), `Euk1391F`/`EukBr` (V9).
 
-> **Nota:** la base `dada_ref_taxonomy` debe corresponder al marcador (UNITE solo
-> sirve para ITS; SILVA, GTDB o Greengenes para 16S; y PR2 o SILVA para 18S).
->
-> **18S con SILVA:** la SILVA de DADA2 que trae ampliseq está optimizada para
-> Bacteria/Archaea y su documentación la marca no apta para eucariotas. Si quieres usar SILVA en 18S hay que usar el clasificador de QIIME2: en
-> `marcador_18s.yaml`, comenta `dada_ref_taxonomy: "pr2=5.1.0"` y descomenta
-> `qiime_ref_taxonomy: "silva=138"` (la SILVA de QIIME2 es la combinada 16S/18S).
+**Nota 1:** la base `dada_ref_taxonomy` debe corresponder al marcador (UNITE solo
+sirve para ITS; SILVA, GTDB o Greengenes para 16S; y PR2 o SILVA para 18S).
+**Nota 2:** la SILVA de DADA2 que trae ampliseq está optimizada para
+Bacteria/Archaea y no trae secuencias aptas para analizar especies del dominio Eukarya. Si quieres usar SILVA en 18S, hay que usar el clasificador de QIIME2: en
+`marcador_18s.yaml`, comenta `dada_ref_taxonomy: "pr2=5.1.0"` y descomenta
+`qiime_ref_taxonomy: "silva=138"` (la SILVA de QIIME2 sí trae las secuencias de 18S).
 
 ---
 
@@ -187,17 +178,16 @@ Dentro de `resultados/<PROYECTO>/` encontrarás (entre otros):
 | `dada2/` | Tabla de ASVs, secuencias representativas y estadísticas |
 | `cutadapt/` | Reporte de eliminación de _primers_ |
 | `itsx/` | Secuencias ITS recortadas (solo en ITS) |
-| `dada2/<bd>/` | Taxonomía asignada (UNITE o SILVA) |
+| `dada2/<bd>/` | Taxonomía inferida (UNITE o SILVA) |
 | `qiime2/` | Diversidad alfa/beta y abundancias relativas (si hay metadatos) |
-| `multiqc/` | Reporte de calidad agregado (abrir el `.html`) |
-| `summary_report/` | Reporte resumen del análisis (abrir el `.html`) |
+| `multiqc/` | Reporte de calidad concatenado (abrir el `.html`) |
+| `summary_report/` | Resumen del análisis (abrir el `.html`) |
 | `pipeline_info/` | Versiones, tiempos y trazabilidad de la corrida |
 
-Para una tabla de tiempos por proceso (tareas, tiempo total y promedio, %cpu máximo
-y RAM pico) a partir del `execution_trace` que Nextflow pone en `pipeline_info/`, corre:
+Por último, para obtener una tabla de tiempos por proceso (tareas, tiempo total y promedio, %cpu máximo y RAM pico), corre:
 
 ```bash
-bash scripts/04_resumen_tiempos.sh        # usa el trace más reciente
+bash scripts/04_resumen_tiempos.sh        # usa el trace de Nextflow más reciente
 ```
 
 ---
