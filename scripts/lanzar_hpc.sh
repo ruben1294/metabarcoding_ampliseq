@@ -4,8 +4,8 @@
 #  Autor: Rubén Castañeda-Martínez
 # -----------------------------------------------------------------------------
 #  Envía el job maestro al HPC eligiendo un nodo disponible de los permitidos
-#  (NODOS_MAESTRO en parametros.sh: nodo5, nodo27 o nodo28). El maestro es ligero
-#  (2 CPU, 4 GB) y puede compartir nodo27/nodo28 con las tareas hijas. Prefiere el
+#  (NODOS_MAESTRO en parametros.sh: nodo5, nodo27 o nodo28). El job maestro es el orquestador y pide pocos recursos
+#  (2 CPU, 4 GB), y puede compartir nodo27/nodo28 con las tareas hijas. Prefiere el
 #  primero de la lista con CPUs libres; si todos están llenos toma el de más CPUs
 #  libres y encola ahí. El --nodelist que pasa aquí sobrescribe el de lanzar_hpc.slurm.
 #
@@ -41,15 +41,15 @@ for nodo in "${NODOS[@]}"; do
     fi
 done
 
-# 2) Si ninguno tiene hueco, el de más CPUs libres (el maestro encolará ahí)
+# 2) Si ninguno tiene hueco, el de más CPUs libres (el job maestro se calendarizará allí)
 if [ -z "$elegido" ]; then
     mejor=-1
     for nodo in "${NODOS[@]}"; do
         libres="$(cpus_libres "$nodo")"; libres="${libres:-0}"
         if [ "$libres" -gt "$mejor" ]; then mejor="$libres"; elegido="$nodo"; fi
     done
-    echo "[lanzador] todos ocupados, el maestro encolará en $elegido (CPUs libres: $mejor)."
+    echo "[lanzador] todos ocupados, el job maestro se calendarizará en $elegido (CPUs libres: $mejor)."
 fi
 
-echo "[lanzador] enviando el maestro a $elegido…"
+echo "[lanzador] enviando el job maestro a $elegido…"
 sbatch --nodelist="$elegido" "$@" scripts/lanzar_hpc.slurm

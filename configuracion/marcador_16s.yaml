@@ -23,3 +23,17 @@ dada_ref_taxonomy: "silva=138"
 #dada_ref_tax_custom_sp: "/LUSTRE/bioinformatica_data/BD/metagenomica/SILVA/silva_species_assignment_v138.fa.gz"
 # El nombre/URL EXACTO que usa esta versión del pipeline lo sacas con:
 #   grep -iA4 'silva' ~/.nextflow/assets/.repos/nf-core/ampliseq/conf/ref_databases.config
+
+# --- Clasificación alternativa / avanzada (opcional) ---
+# Clasificador QIIME2 ya entrenado (.qza), en vez de entrenar desde la base. Debe
+# coincidir con el par de primers/región de este marcador. --classifier
+#classifier: "/ruta/al/clasificador.qza"
+
+# Colocación filogenética de ASVs con EPA-ng: los clasifica colocándolos en un árbol
+# de referencia que tú aportas (específico del marcador). Las cinco claves se activan
+# juntas; descoméntalas y ajústalas para usarlo.
+#pplace_tree: "/ruta/arbol_referencia.nwk"          # árbol de referencia (newick). --pplace_tree
+#pplace_aln: "/ruta/secuencias_referencia.fasta"    # secuencias de referencia. --pplace_aln
+#pplace_model: "GTR+I+F"                            # modelo evolutivo (ej. LG+F, GTR+I+F). --pplace_model
+#pplace_alnmethod: "clustalo"                       # alineamiento: clustalo (def), hmmer o mafft. --pplace_alnmethod
+#pplace_taxonomy: "/ruta/taxonomia_referencia.tsv"  # taxonomía de las referencias (TSV). --pplace_taxonomy

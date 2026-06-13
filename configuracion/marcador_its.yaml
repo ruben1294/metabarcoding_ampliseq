@@ -13,6 +13,10 @@ RV_primer: "TCCTCCGCTTATTGATATGC"
 # Región que recorta ITSx antes de clasificar: its1, its2 o full
 cut_its: "its2"
 
+# Conservar secuencias ITS que ITSx solo detecta parcialmente, con esta longitud
+# mínima (pb); omítelo para descartarlas (comportamiento por defecto). --its_partial
+#its_partial: 50
+
 # Base de datos de referencia para inferencia taxonómica (específica de hongos/ITS):
 #   unite-fungi (solo hongos) o unite-alleuk (todos los eucariotas)
 #   versiones: 10.0 (más reciente), 9.0, 8.3, 8.2
@@ -31,3 +35,17 @@ addsh: true
 #   grep -iA4 'unite-fungi' ~/.nextflow/assets/.repos/nf-core/ampliseq/conf/ref_databases.config
 # Nota: 'addsh: true' depende de archivos propios de UNITE; si no logras armar el SH
 # local, ponlo en false para la corrida offline.
+
+# --- Clasificación alternativa / avanzada (opcional) ---
+# Clasificador QIIME2 ya entrenado (.qza), en vez de entrenar desde la base. Debe
+# coincidir con el par de primers/región de este marcador. --classifier
+#classifier: "/ruta/al/clasificador.qza"
+
+# Colocación filogenética de ASVs con EPA-ng: los clasifica colocándolos en un árbol
+# de referencia que tú aportas (específico del marcador). Las cinco claves se activan
+# juntas; descoméntalas y ajústalas para usarlo.
+#pplace_tree: "/ruta/arbol_referencia.nwk"          # árbol de referencia (newick). --pplace_tree
+#pplace_aln: "/ruta/secuencias_referencia.fasta"    # secuencias de referencia. --pplace_aln
+#pplace_model: "GTR+I+F"                            # modelo evolutivo (ej. LG+F, GTR+I+F). --pplace_model
+#pplace_alnmethod: "clustalo"                       # alineamiento: clustalo (def), hmmer o mafft. --pplace_alnmethod
+#pplace_taxonomy: "/ruta/taxonomia_referencia.tsv"  # taxonomía de las referencias (TSV). --pplace_taxonomy

@@ -46,8 +46,10 @@ echo "[maestro] nodo: $(hostname)  job: ${SLURM_JOB_ID:-?}"
 echo "[maestro] repo: $(pwd)"
 
 # conda debe estar en el PATH para que el script 03 active el entorno lanzador.
-# Si en tu clúster viene como módulo, descomenta y ajusta la línea siguiente:
-module load conda-2023_metagenomica
+# En OMICA viene como módulo; lo cargamos sin abortar si no existe (otros clústeres
+# no lo tendrán). Ajusta el nombre del módulo a tu clúster, o quita esta línea si no
+# usa 'module'. Si falla, el bloque de abajo busca conda en las rutas habituales.
+module load conda-2023_metagenomica 2>/dev/null || true
 if ! command -v conda >/dev/null 2>&1; then
     for base in "$HOME/miniforge3" "$HOME/miniconda3" "$HOME/anaconda3"; do
         if [ -f "$base/etc/profile.d/conda.sh" ]; then

@@ -14,7 +14,7 @@
 
 # 1) Identidad del proyecto
 # Nombre corto del proyecto. Nombra las subcarpetas de resultados y logs
-# (resultados/<PROYECTO>/ y logs/<PROYECTO>/, ver sección 8). Usa un nombre sin espacios.
+# (resultados/<PROYECTO>/ y logs/<PROYECTO>/, ver sección 15). Usa un nombre sin espacios.
 PROYECTO="prueba_ITS"
 
 
@@ -24,7 +24,7 @@ PROYECTO="prueba_ITS"
 #   "hpc"   = un clúster con SLURM. Manda las tareas a la cola, corren con Docker
 #             en los nodos que lo tienen (en OMICA: nodo27 y nodo28).
 # Si lo dejas vacío, el script te preguntará al arrancar (00, 02 y 03).
-# Cada entorno tiene su propio archivo de recursos (ver sección 9).
+# Cada entorno tiene su propio archivo de recursos (ver sección 16).
 ENTORNO="local"
 
 # Nodos donde puede correr el job maestro en el HPC, en orden de preferencia. El
@@ -41,7 +41,7 @@ NODOS_MAESTRO="nodo5 nodo27 nodo28"
 #   "18s" = eucariotas (gen 18S rDNA).
 # Si lo dejas vacío, el script te preguntará al arrancar (02 y 03).
 # Los parámetros de cada marcador (primers, base de datos, región) viven en su
-# propio archivo .yaml. Edítalos ahí, no aquí (ver sección 9).
+# propio archivo .yaml. Edítalos ahí, no aquí (ver sección 16).
 MARCADOR="its"
 
 
@@ -101,15 +101,148 @@ USAR_SAMPLESHEET="si"
 #   "si" → activa --double_primer (útil si quedan primers residuales en el reporte)
 DOBLE_PRIMER="no"
 
+# ¿Conservar las lecturas sin primer en vez de descartarlas? si/no
+#   "si": activa --retain_untrimmed
+RETENER_SIN_PRIMER="no"
 
-# 7) Metadatos (opcional, recomendado para análisis de diversidad)
+# Solape mínimo (pb) que cutadapt exige para reconocer el primer. --cutadapt_min_overlap
+CUTADAPT_MIN_OVERLAP="3"
+
+# Tasa máxima de error que cutadapt tolera al reconocer el primer. --cutadapt_max_error_rate
+CUTADAPT_MAX_ERROR_RATE="0.1"
+
+# ¿No abortar si una muestra se queda sin lecturas tras el recorte? si/no
+#   "si": activa --ignore_failed_trimming
+IGNORAR_RECORTE_FALLIDO="no"
+
+
+# 7) Recorte y filtrado de calidad de lecturas (DADA2)
+# Longitud a la que se truncan las lecturas FW; 0 = sin truncado (auto según TRUNC_QMIN). --trunclenf
+TRUNCLENF="0"
+
+# Longitud a la que se truncan las lecturas RV (solo pareadas); 0 = sin truncado. --trunclenr
+TRUNCLENR="0"
+
+# Calidad mínima (phred) para el truncado automático cuando TRUNCLENF/R = 0. --trunc_qmin
+TRUNC_QMIN="25"
+
+# Fracción mínima de lecturas que el truncado automático debe conservar. --trunc_rmin
+TRUNC_RMIN="0.75"
+
+# Máximo de errores esperados (EE); descarta lecturas por encima. --max_ee
+MAX_EE="2"
+
+# Longitud mínima de lectura tras el filtrado. --min_len
+MIN_LEN="50"
+
+# Longitud máxima de lectura tras el filtrado; vacío = sin límite. --max_len
+MAX_LEN=""
+
+# ¿No abortar si una muestra queda con muy pocas lecturas tras el filtrado? si/no
+#   "si": activa --ignore_failed_filtering
+IGNORAR_FILTRADO_FALLIDO="no"
+
+
+# 8) Cálculo de variantes de secuencia (ASV) con DADA2
+# Modo de inferencia: independent (cada muestra), pooled (todas juntas) o
+# pseudo (intermedio, más sensible a ASVs raras). --sample_inference
+SAMPLE_INFERENCE="independent"
+
+
+# 9) Posprocesamiento de ASVs
+# ¿Agrupar ASVs en OTUs por identidad con vsearch? si/no
+#   "si": activa --vsearch_cluster
+VSEARCH_CLUSTER="no"
+
+# Identidad (0-1) para agrupar con vsearch. --vsearch_cluster_id
+VSEARCH_CLUSTER_ID="0.97"
+
+# Filtrar ASVs por SSU rRNA con barrnap; vacío = sin filtro (ej. bac,arc,mito,euk). --filter_ssu
+FILTER_SSU=""
+
+# Longitud mínima de ASV (pb); vacío = sin filtro. --min_len_asv
+MIN_LEN_ASV=""
+
+# Longitud máxima de ASV (pb); vacío = sin filtro. --max_len_asv
+MAX_LEN_ASV=""
+
+# ¿Filtrar ASVs por codones de paro (marcadores codificantes)? si/no
+#   "si": activa --filter_codons
+FILTER_CODONS="no"
+
+# Inicio del marco de lectura (ORF) para el filtro de codones. --orf_start
+ORF_START="1"
+
+# Fin del marco de lectura (ORF); vacío = hasta el final. --orf_end
+ORF_END=""
+
+# Codones de paro para el filtro. --stop_codons
+STOP_CODONS="TAA,TAG"
+
+
+# 10) Filtrado de ASVs por taxonomía y abundancia
+# Taxones a excluir (lista separada por comas). --exclude_taxa
+EXCLUDE_TAXA="mitochondria,chloroplast"
+
+# Frecuencia (abundancia total) mínima para conservar un ASV. --min_frequency
+MIN_FREQUENCY="1"
+
+# Número mínimo de muestras en que debe aparecer un ASV. --min_samples
+MIN_SAMPLES="1"
+
+
+# 11) Metadatos (opcional, recomendado para análisis de diversidad)
 # Tabla de metadatos (TSV, primera columna con encabezado "ID"). Si la dejas
 # vacía (""), se omiten los análisis de diversidad de QIIME2. Hay una plantilla
 # en metadatos/metadatos.tsv.ejemplo
 METADATA=""
 
 
-# 8) Salida
+# 12) Análisis posteriores (diversidad y abundancia; usan los metadatos de arriba)
+# Columnas de metadatos para las pruebas estadísticas (lista por comas);
+# vacío = ampliseq elige las categorías aptas. --metadata_category
+METADATA_CATEGORY=""
+
+# Columnas de metadatos para los barplots de abundancia relativa media (por comas). --metadata_category_barplot
+METADATA_CATEGORY_BARPLOT=""
+
+# Profundidad mínima de rarefacción para diversidad; descarta muestras por debajo. --diversity_rarefaction_depth
+DIVERSITY_RAREFACTION_DEPTH="500"
+
+# Nivel mínimo de aglomeración taxonómica. --tax_agglom_min
+TAX_AGGLOM_MIN="2"
+
+# Nivel máximo de aglomeración taxonómica. --tax_agglom_max
+TAX_AGGLOM_MAX="6"
+
+
+# 13) Reporte de resumen del pipeline
+# Título del reporte Markdown final. --report_title
+REPORT_TITLE="Summary of analysis results"
+
+
+# 14) Omitir pasos específicos (avanzado). Descomenta y pon "si" para saltarte un paso;
+#     por defecto NO se omite nada. Cada variable activa su bandera --skip_* de ampliseq.
+#OMITIR_FASTQC="si"              # --skip_fastqc: control de calidad FastQC
+#OMITIR_CUTADAPT="si"           # --skip_cutadapt: recorte de primers (¡no recomendado!)
+#OMITIR_DADA_QUALITY="si"       # --skip_dada_quality: control de calidad DADA2 (solo si fijas TRUNCLENF/R)
+#OMITIR_BARRNAP="si"            # --skip_barrnap: anotación de SSU rRNA con barrnap
+#OMITIR_QIIME="si"              # --skip_qiime: todos los pasos de QIIME2
+#OMITIR_QIIME_DOWNSTREAM="si"   # --skip_qiime_downstream: pasos de QIIME2 salvo la clasificación taxonómica
+#OMITIR_TAXONOMY="si"           # --skip_taxonomy: la clasificación taxonómica por completo
+#OMITIR_DADA_TAXONOMY="si"      # --skip_dada_taxonomy: clasificación taxonómica con DADA2
+#OMITIR_DADA_ADDSPECIES="si"    # --skip_dada_addspecies: asignación a especie con DADA2 (baja mucho la RAM)
+#OMITIR_BARPLOT="si"            # --skip_barplot: barplots de abundancia
+#OMITIR_ABUNDANCE_TABLES="si"   # --skip_abundance_tables: tablas de abundancia relativa
+#OMITIR_ALPHA_RAREFACTION="si"  # --skip_alpha_rarefaction: rarefacción alfa
+#OMITIR_DIVERSITY_INDICES="si"  # --skip_diversity_indices: diversidad alfa y beta
+#OMITIR_PHYLOSEQ="si"           # --skip_phyloseq: exportar objetos phyloseq (R)
+#OMITIR_TSE="si"                # --skip_tse: exportar objetos TreeSummarizedExperiment (R)
+#OMITIR_MULTIQC="si"            # --skip_multiqc: reporte MultiQC
+#OMITIR_REPORT="si"             # --skip_report: reporte Markdown de resumen
+
+
+# 15) Salida
 # Carpeta de resultados. Cada proyecto va en su propia subcarpeta (resultados/<PROYECTO>/)
 # para que las corridas de distintos proyectos no se mezclen ni se sobrescriban.
 # El nombre lo toma de PROYECTO (sección 1).
@@ -118,8 +251,15 @@ SALIDA="resultados/$PROYECTO"
 # Carpeta de logs de los scripts (.out, .err, comando y versiones), también por proyecto.
 DIR_LOGS="logs/$PROYECTO"
 
+# ¿Guardar los archivos intermedios de QIIME2 (.qza/.qzv)? si/no
+#   "si": activa --save_intermediates
+GUARDAR_INTERMEDIOS="si"
 
-# 9) Archivos de cada decisión (rara vez se cambian las rutas)
+# Correo para el resumen que ampliseq manda al terminar.
+EMAIL=""
+
+
+# 16) Archivos de cada decisión (rara vez se cambian las rutas)
 # Recursos por entorno (sección 2); el script elige según ENTORNO.
 CONFIG_LOCAL="configuracion/recursos_local.config"
 CONFIG_HPC="configuracion/recursos_hpc.config"
@@ -130,9 +270,10 @@ CONFIG_16S="configuracion/marcador_16s.yaml"
 CONFIG_18S="configuracion/marcador_18s.yaml"
 
 
-# 10) Parámetros extra (avanzado, opcional)
-# Cualquier bandera adicional de nf-core/ampliseq, tal cual. Ejemplos útiles:
-#   "--truncq 4"                 → corta lecturas con calidad <= 4 (útil en ITS)
-#   "--ignore_failed_trimming"   → no abortar si una muestra pierde sus lecturas
-#   "--max_ee 2"                 → filtro de error esperado de DADA2
+# 17) Parámetros extra (avanzado, opcional)
+# Banderas adicionales de nf-core/ampliseq tal cual; se pasan por CLI y mandan sobre
+# el params-file. Si algo ya tiene su variable arriba, edita la variable, no esto.
+#   "--pacbio"                    → lecturas PacBio en vez de Illumina
+#   "--multiple_sequencing_runs"  → la entrada tiene varias corridas de secuenciación
+#   "--picrust"                   → predicción funcional con PICRUSt2
 EXTRA_PARAMS=""

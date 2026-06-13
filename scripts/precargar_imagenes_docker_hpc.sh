@@ -62,7 +62,7 @@ NXF_OFFLINE=false nextflow inspect nf-core/ampliseq -r "$VERSION_PIPELINE" \
   | sed -E 's/.*"([^"]+)"[[:space:]]*$/\1/' \
   | sort -u > "$LISTA" || true
 
-N="$(grep -c . "$LISTA" 2>/dev/null || echo 0)"
+N="$(grep -c . "$LISTA" 2>/dev/null)" || N=0
 if [ "$N" -eq 0 ]; then
     log_error "No pude extraer imágenes con 'nextflow inspect' (lista vacía: $LISTA)."
     log_error "  Revisa a mano:  nextflow inspect nf-core/ampliseq -r $VERSION_PIPELINE -profile docker -params-file $CONFIG_MARCADOR ${ENTRADA[*]} --outdir /tmp/insp"

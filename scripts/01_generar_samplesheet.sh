@@ -110,6 +110,16 @@ for r1 in "${R1S[@]}"; do
     N=$((N+1))
 done
 
+# Nombres de muestra repetidos: ampliseq abortaría a mitad de corrida, así que lo
+# atajamos aquí. Pasa si dos FASTQ distintos reducen al mismo nombre.
+dups="$(cut -f1 "$SAMPLESHEET" | tail -n +2 | sort | uniq -d)"
+if [ -n "$dups" ]; then
+    log_error "Nombres de muestra repetidos en $SAMPLESHEET:"
+    while IFS= read -r d; do log_error "  - $d"; done <<< "$dups"
+    log_error "  Renombra los FASTQ o edita la columna 'sample' para que sean únicos."
+    exit 1
+fi
+
 log_info "Hoja de muestras creada: $SAMPLESHEET"
 log_info "Muestras escritas: $N"
 log_info "  ---- Vista previa ----"

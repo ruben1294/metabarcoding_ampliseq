@@ -49,13 +49,16 @@ seleccionar_entorno    # fija MOTOR y CONFIG_RECURSOS
 seleccionar_marcador   # fija CONFIG_MARCADOR (respeta el --marcador de arriba si se pasó)
 activar_trap_errores
 
-# Activamos el entorno con Nextflow y Java
-if command -v conda >/dev/null 2>&1; then
-    source "$(conda info --base)/etc/profile.d/conda.sh"
-    conda activate "$ENV_LANZADOR" 2>/dev/null \
-        || { log_error "no existe el entorno '$ENV_LANZADOR'. Corre antes: bash scripts/00_instalar_dependencias.sh"; exit 1; }
+# Activamos el entorno con Nextflow y Java. En --dry-run no se corre Nextflow, así
+# que nos saltamos esto para poder revisar el comando sin tener el entorno listo.
+if [ "$DRY_RUN" != "si" ]; then
+    if command -v conda >/dev/null 2>&1; then
+        source "$(conda info --base)/etc/profile.d/conda.sh"
+        conda activate "$ENV_LANZADOR" 2>/dev/null \
+            || { log_error "no existe el entorno '$ENV_LANZADOR'. Corre antes: bash scripts/00_instalar_dependencias.sh"; exit 1; }
+    fi
+    command -v nextflow >/dev/null 2>&1 || { log_error "Nextflow no disponible. Corre: bash scripts/00_instalar_dependencias.sh"; exit 1; }
 fi
-command -v nextflow >/dev/null 2>&1 || { log_error "Nextflow no disponible. Corre: bash scripts/00_instalar_dependencias.sh"; exit 1; }
 
 # Cachés de Nextflow. En HPC con motor apptainer/singularity las imágenes .sif viven
 # en LUSTRE compartido (precargadas con scripts/precargar_imagenes_hpc.sh) para que
@@ -75,65 +78,69 @@ case "$MOTOR" in
     *) log_error "MOTOR no válido: '$MOTOR' (usa docker, singularity, apptainer o conda)"; exit 1 ;;
 esac
 
-# Que el motor responda antes de empezar. En HPC el maestro (nodo5/27/28) solo
-# manda las tareas a SLURM y el motor corre en los nodos de cómputo (nodo27, nodo28),
-# así que aquí solo se exige 'sbatch'. En local el motor sí corre en esta máquina.
-if [ "$ENTORNO" = "hpc" ]; then
-    command -v sbatch >/dev/null 2>&1 \
-        || { log_error "ENTORNO=hpc pero no encontré 'sbatch'. Lanza desde un nodo del clúster (p. ej. nodo5)."; exit 1; }
-    case "$MOTOR" in
-        docker)
-            log_info "Docker corre en los nodos de cómputo (nodo27, nodo28); el maestro solo orquesta." ;;
-        singularity|apptainer)
-            command -v apptainer >/dev/null 2>&1 || command -v singularity >/dev/null 2>&1 \
-                || log_warn "MOTOR=$MOTOR: no veo Singularity/Apptainer en el maestro. Si Nextflow no puede preparar las imágenes, cárgalo con 'module load'." ;;
-    esac
-else
-    case "$MOTOR" in
-        docker)
-            if ! docker info >/dev/null 2>&1; then
-                log_error "MOTOR=docker pero Docker no responde. Abre Docker Desktop y activa la"
-                log_error "  integración con esta distro: Settings → Resources → WSL integration."
-                exit 1
-            fi
-            ;;
-        singularity|apptainer)
-            if ! command -v apptainer >/dev/null 2>&1 && ! command -v singularity >/dev/null 2>&1; then
-                log_error "MOTOR=$MOTOR pero no encontré Singularity/Apptainer en el PATH."
-                exit 1
-            fi
-            ;;
-    esac
-fi
-
-# En HPC el maestro puede caer en un nodo de cómputo (nodo27/nodo28) sin salida a
-# internet, así que corremos Nextflow offline y usamos el pipeline ya descargado en
-# la caché. Ese precargado lo hace el script 00 en el nodo interactivo (el único con
-# internet). Sin esto Nextflow intenta bajarlo y falla con "Unknown project".
-if [ "$ENTORNO" = "hpc" ]; then
-    export NXF_OFFLINE='true'
-    # Verificamos contra la caché real de Nextflow (su ubicación depende de NXF_HOME).
-    # No asumimos una ruta fija: el mismo nextflow que precarga es el que corre aquí,
-    # así que 'nextflow list' refleja lo que el maestro podrá usar.
-    if ! nextflow list 2>/dev/null | grep -qx "nf-core/ampliseq"; then
-        log_error "nf-core/ampliseq no aparece en la caché de Nextflow ('nextflow list' no lo encuentra)."
-        log_error "  Los nodos de cómputo no tienen internet. Precárgalo en el nodo interactivo:"
-        log_error "    conda activate $ENV_LANZADOR && NXF_OFFLINE=false nextflow pull nf-core/ampliseq -r $VERSION_PIPELINE"
-        log_error "  Mira dónde quedó con: nextflow info nf-core/ampliseq"
-        exit 1
+# Las comprobaciones de motor y caché solo importan para correr de verdad; en
+# --dry-run las omitimos para poder revisar el comando sin Docker ni caché listos.
+if [ "$DRY_RUN" != "si" ]; then
+    # Que el motor responda antes de empezar. En HPC el maestro (nodo5/27/28) solo
+    # manda las tareas a SLURM y el motor corre en los nodos de cómputo (nodo27, nodo28),
+    # así que aquí solo se exige 'sbatch'. En local el motor sí corre en esta máquina.
+    if [ "$ENTORNO" = "hpc" ]; then
+        command -v sbatch >/dev/null 2>&1 \
+            || { log_error "ENTORNO=hpc pero no encontré 'sbatch'. Lanza desde un nodo del clúster (p. ej. nodo5)."; exit 1; }
+        case "$MOTOR" in
+            docker)
+                log_info "Docker corre en los nodos de cómputo (nodo27, nodo28); el maestro solo orquesta." ;;
+            singularity|apptainer)
+                command -v apptainer >/dev/null 2>&1 || command -v singularity >/dev/null 2>&1 \
+                    || log_warn "MOTOR=$MOTOR: no veo Singularity/Apptainer en el maestro. Si Nextflow no puede preparar las imágenes, cárgalo con 'module load'." ;;
+        esac
+    else
+        case "$MOTOR" in
+            docker)
+                if ! docker info >/dev/null 2>&1; then
+                    log_error "MOTOR=docker pero Docker no responde. Abre Docker Desktop y activa la"
+                    log_error "  integración con esta distro: Settings → Resources → WSL integration."
+                    exit 1
+                fi
+                ;;
+            singularity|apptainer)
+                if ! command -v apptainer >/dev/null 2>&1 && ! command -v singularity >/dev/null 2>&1; then
+                    log_error "MOTOR=$MOTOR pero no encontré Singularity/Apptainer en el PATH."
+                    exit 1
+                fi
+                ;;
+        esac
     fi
-    log_info "Modo offline (NXF_OFFLINE=true); nf-core/ampliseq disponible en la caché de Nextflow."
 
-    # Con apptainer/singularity las imágenes .sif deben estar precargadas en la caché
-    # compartida; en los nodos de cómputo sin internet no se pueden bajar al vuelo.
-    if [ "$MOTOR" = "apptainer" ] || [ "$MOTOR" = "singularity" ]; then
-        if [ -z "$(ls -A "$NXF_SINGULARITY_CACHEDIR" 2>/dev/null)" ]; then
-            log_error "La caché de imágenes está vacía: $NXF_SINGULARITY_CACHEDIR"
-            log_error "  Precárgalas en el nodo interactivo (con internet):"
-            log_error "    bash scripts/precargar_imagenes_hpc.sh"
+    # En HPC el maestro puede caer en un nodo de cómputo (nodo27/nodo28) sin salida a
+    # internet, así que corremos Nextflow offline y usamos el pipeline ya descargado en
+    # la caché. Ese precargado lo hace el script 00 en el nodo interactivo (el único con
+    # internet). Sin esto Nextflow intenta bajarlo y falla con "Unknown project".
+    if [ "$ENTORNO" = "hpc" ]; then
+        export NXF_OFFLINE='true'
+        # Verificamos contra la caché real de Nextflow (su ubicación depende de NXF_HOME).
+        # No asumimos una ruta fija: el mismo nextflow que precarga es el que corre aquí,
+        # así que 'nextflow list' refleja lo que el maestro podrá usar.
+        if ! nextflow list 2>/dev/null | grep -qx "nf-core/ampliseq"; then
+            log_error "nf-core/ampliseq no aparece en la caché de Nextflow ('nextflow list' no lo encuentra)."
+            log_error "  Los nodos de cómputo no tienen internet. Precárgalo en el nodo interactivo:"
+            log_error "    conda activate $ENV_LANZADOR && NXF_OFFLINE=false nextflow pull nf-core/ampliseq -r $VERSION_PIPELINE"
+            log_error "  Mira dónde quedó con: nextflow info nf-core/ampliseq"
             exit 1
         fi
-        log_info "Imágenes de contenedor desde la caché: $NXF_SINGULARITY_CACHEDIR"
+        log_info "Modo offline (NXF_OFFLINE=true); nf-core/ampliseq disponible en la caché de Nextflow."
+
+        # Con apptainer/singularity las imágenes .sif deben estar precargadas en la caché
+        # compartida; en los nodos de cómputo sin internet no se pueden bajar al vuelo.
+        if [ "$MOTOR" = "apptainer" ] || [ "$MOTOR" = "singularity" ]; then
+            if [ -z "$(ls -A "$NXF_SINGULARITY_CACHEDIR" 2>/dev/null)" ]; then
+                log_error "La caché de imágenes está vacía: $NXF_SINGULARITY_CACHEDIR"
+                log_error "  Precárgalas en el nodo interactivo (con internet):"
+                log_error "    bash scripts/precargar_imagenes_hpc.sh"
+                exit 1
+            fi
+            log_info "Imágenes de contenedor desde la caché: $NXF_SINGULARITY_CACHEDIR"
+        fi
     fi
 fi
 
@@ -181,25 +188,97 @@ else
 fi
 
 # 4) Preparamos el params-file de la corrida: copia del YAML del marcador más los
-#    toggles dinámicos. Los booleanos van aquí y no por CLI porque nf-schema los
-#    valida estricto: un flag suelto (--illumina_pe_its) llega como string "true"
-#    y la validación lo rechaza; en el YAML true es un booleano de verdad.
-#    El archivo además queda como evidencia de lo que se corrió.
+#    parámetros de parametros.sh. Todo va por el params-file (no por CLI) para que
+#    nf-schema reciba el tipo correcto —booleano de verdad, número sin comillas y
+#    cadena entre comillas— y para que el YAML quede como evidencia completa de la
+#    corrida. Un flag booleano suelto por CLI (--illumina_pe_its) llegaría como string
+#    "true" y la validación lo rechazaría.
+# Helpers: vuelcan la variable solo si tiene valor, con el formato YAML que toca.
+emitir_bool() { if [ "${2:-no}" = "si" ]; then echo "$1: true"; fi; }    # toggle si/no → 'clave: true'
+emitir_num()  { if [ -n "${2:-}" ]; then echo "$1: $2"; fi; }            # número, sin comillas
+emitir_str()  { if [ -n "${2:-}" ]; then echo "$1: \"$2\""; fi; }        # cadena, entre comillas
+
 PARAMS_RUN="$SALIDA/params_usados_${SELLO}.yaml"
 cp "$CONFIG_MARCADOR" "$PARAMS_RUN"
 {
     echo ""
-    echo "# Toggles añadidos por 03_ejecutar_ampliseq.sh (sello: $SELLO)"
+    echo "# Parámetros añadidos por 03_ejecutar_ampliseq.sh (sello: $SELLO)"
     # Lecturas single-end (solo R1): sin esto ampliseq asume pareado y exige fastq_2
     if [ "$DISENO_LECTURAS" = "single" ]; then echo "single_end: true"; fi
     # Lecturas ITS pareadas: avisa a ampliseq del posible read-through
     if [ "$MARCADOR" = "its" ] && [ "$DISENO_LECTURAS" = "paired" ]; then echo "illumina_pe_its: true"; fi
-    # Primers dobles (toggle de parametros.sh)
-    if [ "$DOBLE_PRIMER" = "si" ]; then echo "double_primer: true"; fi
+
+    # Recorte de primers (cutadapt)
+    emitir_bool double_primer           "$DOBLE_PRIMER"
+    emitir_bool retain_untrimmed        "$RETENER_SIN_PRIMER"
+    emitir_num  cutadapt_min_overlap    "$CUTADAPT_MIN_OVERLAP"
+    emitir_num  cutadapt_max_error_rate "$CUTADAPT_MAX_ERROR_RATE"
+    emitir_bool ignore_failed_trimming  "$IGNORAR_RECORTE_FALLIDO"
+
+    # Recorte y filtrado de calidad (DADA2). trunclenr solo aplica a pareadas
+    emitir_num  trunclenf  "$TRUNCLENF"
+    if [ "$DISENO_LECTURAS" = "paired" ]; then emitir_num trunclenr "$TRUNCLENR"; fi
+    emitir_num  trunc_qmin "$TRUNC_QMIN"
+    emitir_num  trunc_rmin "$TRUNC_RMIN"
+    emitir_num  max_ee     "$MAX_EE"
+    emitir_num  min_len    "$MIN_LEN"
+    emitir_num  max_len    "$MAX_LEN"
+    emitir_bool ignore_failed_filtering "$IGNORAR_FILTRADO_FALLIDO"
+
+    # Cálculo de ASVs (DADA2)
+    emitir_str  sample_inference "$SAMPLE_INFERENCE"
+
+    # Posprocesamiento de ASVs
+    emitir_bool vsearch_cluster    "$VSEARCH_CLUSTER"
+    emitir_num  vsearch_cluster_id "$VSEARCH_CLUSTER_ID"
+    emitir_str  filter_ssu         "$FILTER_SSU"
+    emitir_num  min_len_asv        "$MIN_LEN_ASV"
+    emitir_num  max_len_asv        "$MAX_LEN_ASV"
+    emitir_bool filter_codons      "$FILTER_CODONS"
+    emitir_num  orf_start          "$ORF_START"
+    emitir_num  orf_end            "$ORF_END"
+    emitir_str  stop_codons        "$STOP_CODONS"
+
+    # Filtrado de ASVs por taxonomía y abundancia
+    emitir_str  exclude_taxa  "$EXCLUDE_TAXA"
+    emitir_num  min_frequency "$MIN_FREQUENCY"
+    emitir_num  min_samples   "$MIN_SAMPLES"
+
+    # Análisis posteriores (diversidad y abundancia)
+    emitir_str  metadata_category           "$METADATA_CATEGORY"
+    emitir_str  metadata_category_barplot   "$METADATA_CATEGORY_BARPLOT"
+    emitir_num  diversity_rarefaction_depth "$DIVERSITY_RAREFACTION_DEPTH"
+    emitir_num  tax_agglom_min "$TAX_AGGLOM_MIN"
+    emitir_num  tax_agglom_max "$TAX_AGGLOM_MAX"
+
+    # Reporte de resumen
+    emitir_str  report_title "$REPORT_TITLE"
+
+    # Guardar artefactos intermedios de QIIME2 (.qza/.qzv)
+    emitir_bool save_intermediates "$GUARDAR_INTERMEDIOS"
+
+    # Omitir pasos específicos (toggles OMITIR_* de parametros.sh; comentados por defecto)
+    emitir_bool skip_fastqc            "${OMITIR_FASTQC:-no}"
+    emitir_bool skip_cutadapt          "${OMITIR_CUTADAPT:-no}"
+    emitir_bool skip_dada_quality      "${OMITIR_DADA_QUALITY:-no}"
+    emitir_bool skip_barrnap           "${OMITIR_BARRNAP:-no}"
+    emitir_bool skip_qiime             "${OMITIR_QIIME:-no}"
+    emitir_bool skip_qiime_downstream  "${OMITIR_QIIME_DOWNSTREAM:-no}"
+    emitir_bool skip_taxonomy          "${OMITIR_TAXONOMY:-no}"
+    emitir_bool skip_dada_taxonomy     "${OMITIR_DADA_TAXONOMY:-no}"
+    emitir_bool skip_dada_addspecies   "${OMITIR_DADA_ADDSPECIES:-no}"
+    emitir_bool skip_barplot           "${OMITIR_BARPLOT:-no}"
+    emitir_bool skip_abundance_tables  "${OMITIR_ABUNDANCE_TABLES:-no}"
+    emitir_bool skip_alpha_rarefaction "${OMITIR_ALPHA_RAREFACTION:-no}"
+    emitir_bool skip_diversity_indices "${OMITIR_DIVERSITY_INDICES:-no}"
+    emitir_bool skip_phyloseq          "${OMITIR_PHYLOSEQ:-no}"
+    emitir_bool skip_tse               "${OMITIR_TSE:-no}"
+    emitir_bool skip_multiqc           "${OMITIR_MULTIQC:-no}"
+    emitir_bool skip_report            "${OMITIR_REPORT:-no}"
 } >> "$PARAMS_RUN"
 
 # 5) Ensamblamos el comando de Nextflow para correr el pipeline
-#   recursos por -c (entorno) y parámetros por -params-file (marcador + toggles)
+#   los recursos son definidos por -c (entorno) y los parámetros por -params-file (marcador, toggles y demás)
 CMD=( nextflow run nf-core/ampliseq
       -r "$VERSION_PIPELINE"
       -profile "$MOTOR"
@@ -212,6 +291,8 @@ CMD=( nextflow run nf-core/ampliseq
 
 # Metadatos (solo si existe el archivo)
 [ -n "$METADATA" ] && [ -f "$METADATA" ] && CMD+=( --metadata "$METADATA" )
+# Correo para el resumen de fin de corrida (solo si se definió)
+[ -n "$EMAIL" ] && CMD+=( --email "$EMAIL" )
 # Parámetros extra del usuario (avanzado)
 if [ -n "$EXTRA_PARAMS" ]; then
     # shellcheck disable=SC2206
@@ -229,6 +310,7 @@ log_info "  Primers:         FW=$FW${RV:+  RV=$RV}"
 [ "$MARCADOR" = "its" ] && log_info "  Región ITS:      $REGION"
 log_info "  Taxonomía:       $TAXONOMIA"
 log_info "  Metadatos:       ${METADATA:-(ninguno)}"
+log_info "  Correo:          ${EMAIL:-(ninguno)}"
 log_info "  Salida:          $SALIDA"
 log_info "  Comando completo:"
 log_info "    ${CMD[*]}"
