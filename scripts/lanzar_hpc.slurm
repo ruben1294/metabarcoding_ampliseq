@@ -19,9 +19,9 @@
 #  Autor: Rubén Castañeda-Martínez
 # -----------------------------------------------------------------------------
 #  Lanza el pipeline en el HPC de OMICA (CICESE). El job maestro es un orquestador
-#  ligero (2 CPU, 4 GB) que corre en uno de nodo5/nodo27/nodo28; Nextflow manda cada
+#  que pide pocos recursos (2 CPU, 4 GB) y que corre en uno de nodo5/nodo27/nodo28. Nextflow manda cada
 #  tarea a SLURM y esas tareas usan Docker en nodo27 y nodo28. Este maestro debe
-#  mantenerse vivo durante todo el análisis.
+#  mantenerse corriendo durante todo el análisis.
 #
 #  Para elegir el nodo automáticamente usa el wrapper (recomendado):
 #     bash scripts/lanzar_hpc.sh
@@ -30,7 +30,7 @@
 #  Antes de iniciarlo:
 #    1) En configuracion/parametros.sh fija ENTORNO="hpc" y MARCADOR.
 #    2) Corre una vez scripts/00_instalar_dependencias.sh (crea el entorno conda
-#       con Nextflow + Java en el clúster).
+#       con Nextflow y Java en el clúster).
 #    3) Genera la hoja de muestras: scripts/01_generar_samplesheet.sh
 #
 #  Uso (desde la raíz del repo):
@@ -46,8 +46,7 @@ echo "[maestro] nodo: $(hostname)  job: ${SLURM_JOB_ID:-?}"
 echo "[maestro] repo: $(pwd)"
 
 # conda debe estar en el PATH para que el script 03 active el entorno lanzador.
-# En OMICA viene como módulo; lo cargamos sin abortar si no existe (otros clústeres
-# no lo tendrán). Ajusta el nombre del módulo a tu clúster, o quita esta línea si no
+# En OMICA viene como módulo, lo cargamos sin abortar si no existe. Ajusta el nombre del módulo a tu clúster, o quita esta línea si no
 # usa 'module'. Si falla, el bloque de abajo busca conda en las rutas habituales.
 module load conda-2023_metagenomica 2>/dev/null || true
 if ! command -v conda >/dev/null 2>&1; then

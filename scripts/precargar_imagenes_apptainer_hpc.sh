@@ -23,7 +23,7 @@ iniciar_registro "precargar_imagenes_apptainer_hpc"
 
 # Entorno con nextflow + nf-core
 if command -v conda >/dev/null 2>&1; then
-    source "$(conda info --base)/etc/profile.d/conda.sh"
+    source "$(dirname "$(dirname "${CONDA_EXE:-$(command -v conda)}")")/etc/profile.d/conda.sh"
     conda activate "$ENV_LANZADOR" 2>/dev/null || true
 fi
 

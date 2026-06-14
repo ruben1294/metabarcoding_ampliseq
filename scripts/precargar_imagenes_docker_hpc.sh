@@ -27,7 +27,7 @@ iniciar_registro "precargar_imagenes_docker_hpc"
 
 # Entorno con nextflow
 if command -v conda >/dev/null 2>&1; then
-    source "$(conda info --base)/etc/profile.d/conda.sh"
+    source "$(dirname "$(dirname "${CONDA_EXE:-$(command -v conda)}")")/etc/profile.d/conda.sh"
     conda activate "$ENV_LANZADOR" 2>/dev/null || true
 fi
 command -v nextflow >/dev/null 2>&1 || { log_error "Nextflow no disponible. Corre antes: bash scripts/00_instalar_dependencias.sh"; exit 1; }

@@ -4,6 +4,6 @@
 # para que shellcheck conozca las variables y no las marque como no asignadas.
 external-sources=true
 
-# conda.sh se sourcea con ruta dinámica ($(conda info --base)/etc/profile.d/conda.sh);
-# shellcheck no puede seguirla y no es un problema. SC1091 = "no pude seguir el source".
+# conda.sh se sourcea con ruta dinámica (derivada de CONDA_EXE / la ruta del binario
+# de conda); shellcheck no puede seguirla y no es un problema. SC1091 = "no pude seguir el source".
 disable=SC1091

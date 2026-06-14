@@ -9,6 +9,9 @@
 #  cómputo). Es idempotente: puedes correrlo varias veces sin problema.
 #
 #  Uso:   bash scripts/00_instalar_dependencias.sh
+#         bash scripts/00_instalar_dependencias.sh --entorno hpc   (sobreescribe parametros.sh)
+#         bash scripts/00_instalar_dependencias.sh --proyecto corrida2  (sobreescribe parametros.sh)
+#         bash scripts/00_instalar_dependencias.sh --help      (muestra la ayuda)
 # =============================================================================
 set -euo pipefail
 
@@ -19,6 +22,60 @@ source "configuracion/parametros.sh"
 
 source "scripts/lib/registro.sh"
 source "scripts/lib/entorno.sh"
+
+# Ayuda de la línea de comandos
+mostrar_ayuda() {
+    cat <<'AYUDA'
+Uso: bash scripts/00_instalar_dependencias.sh [opciones]
+
+Prepara el entorno conda con Java y Nextflow según configuracion/parametros.sh.
+Las opciones de abajo sobreescriben, solo para esta corrida, lo definido en parametros.sh.
+
+Opciones:
+  -e, --entorno  <local|hpc>   Dónde se correrá el pipeline. Sobreescribe ENTORNO de
+                               parametros.sh (decide si se instala Apptainer en local y
+                               cómo se verifica el motor).
+  -p, --proyecto <nombre>      Nombre del proyecto. Sobreescribe PROYECTO de
+                               parametros.sh (y con él la carpeta de logs).
+  -h, --help                   Muestra esta ayuda y termina.
+
+Ejemplos:
+  bash scripts/00_instalar_dependencias.sh
+  bash scripts/00_instalar_dependencias.sh --entorno hpc --proyecto corrida2
+AYUDA
+}
+
+# Opciones de línea de comandos. Las sobreescrituras se aplican solo a esta corrida;
+# parametros.sh no se toca. Capturamos los overrides antes de abrir el log porque
+# --proyecto cambia la carpeta de logs (DIR_LOGS).
+PROYECTO_OVERRIDE=""; ENTORNO_OVERRIDE=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -h|--help) mostrar_ayuda; exit 0 ;;
+        -e|--entorno)
+            shift; [ $# -gt 0 ] || { log_error "--entorno necesita un valor (local o hpc)"; exit 1; }
+            ENTORNO_OVERRIDE="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')" ;;
+        --entorno=*)
+            ENTORNO_OVERRIDE="$(printf '%s' "${1#*=}" | tr '[:upper:]' '[:lower:]')" ;;
+        -p|--proyecto)
+            shift; [ $# -gt 0 ] || { log_error "--proyecto necesita un valor (el nombre del proyecto)"; exit 1; }
+            PROYECTO_OVERRIDE="$1" ;;
+        --proyecto=*)
+            PROYECTO_OVERRIDE="${1#*=}" ;;
+        *) log_error "Argumento desconocido: '$1' (usa --entorno, --proyecto o --help)"; exit 1 ;;
+    esac
+    shift
+done
+
+# Aplicamos los overrides sobre lo que trajo parametros.sh. El de --proyecto recalcula
+# la carpeta de logs igual que parametros.sh (este script solo usa DIR_LOGS), para que
+# el registro de versiones de esta corrida quede bajo el proyecto indicado.
+[ -n "$ENTORNO_OVERRIDE" ] && ENTORNO="$ENTORNO_OVERRIDE"
+if [ -n "$PROYECTO_OVERRIDE" ]; then
+    PROYECTO="$PROYECTO_OVERRIDE"
+    DIR_LOGS="logs/$PROYECTO"
+fi
+
 iniciar_registro "00_instalar_dependencias"
 
 # Local o HPC: lo pregunta si ENTORNO está vacío y fija MOTOR y CONFIG_RECURSOS
@@ -44,7 +101,7 @@ if [ "$MOTOR" = "singularity" ] || [ "$MOTOR" = "apptainer" ]; then
     fi
 fi
 
-cabecera_registro "INSTALACIÓN DE DEPENDENCIAS. Proyecto: $PROYECTO"
+cabecera_registro "INSTALACIÓN DE DEPENDENCIAS."
 log_info "Carpeta del proyecto: $DIR_PROYECTO"
 log_info "Entorno conda:        $ENV_LANZADOR"
 
@@ -54,8 +111,11 @@ if ! command -v conda >/dev/null 2>&1; then
     log_error "  https://github.com/conda-forge/miniforge"
     exit 1
 fi
-# Hacemos que 'conda activate' funcione dentro de este script (shell no interactivo)
-source "$(conda info --base)/etc/profile.d/conda.sh"
+# Hacemos que 'conda activate' funcione dentro de este script (shell no interactivo).
+# Derivamos la base del binario de conda (CONDA_EXE o el PATH) en vez de 'conda info
+# --base': si conda trae un plugin ruidoso (p. ej. anaconda-anon-usage) que escribe en
+# stdout, contaminaría la sustitución y la ruta quedaría rota.
+source "$(dirname "$(dirname "${CONDA_EXE:-$(command -v conda)}")")/etc/profile.d/conda.sh"
 log_info "conda detectado: $(conda --version)"
 
 # 2) Configuramos los canales y el solucionador (solver)
@@ -76,9 +136,14 @@ fi
 [ "$INSTALAR_APPTAINER" = "si" ] && PAQUETES+=( "apptainer" )
 log_info "Paquetes a instalar: ${PAQUETES[*]}"
 
-# Paquetes de respaldo (sin versión fija) por si falla anclar la versión exacta.
+# Paquetes de respaldo (sin versión fija) por si falla usar la versión exacta.
 PAQUETES_FLEX=( "openjdk=17" "nextflow" )
 [ "$INSTALAR_APPTAINER" = "si" ] && PAQUETES_FLEX+=( "apptainer" )
+
+# Apagamos nounset durante las operaciones de conda: install/update/create activan de
+# paso el entorno base, cuyos scripts de activación (p. ej. qt-main_activate.sh) leen
+# variables sin definir y con 'set -u' eso abortaría el script. Lo reactivamos al final.
+set +u
 
 # 4) Crear o actualizar el entorno
 if conda env list | awk '{print $1}' | grep -qx "$ENV_LANZADOR"; then
@@ -113,11 +178,14 @@ if ! command -v nf-core >/dev/null 2>&1; then
       || log_warn "No se pudo instalar nf-core tools, pero el flujo igual funciona."
 fi
 
+# Reactivamos nounset para el resto del script.
+set -u
+
 # 5b) Verificamos el motor de contenedores elegido
 case "$MOTOR" in
     docker)
         if [ "$ENTORNO" = "hpc" ]; then
-            log_info "Motor Docker: corre en los nodos de cómputo (nodo27, nodo28); el maestro (nodo5) no lo necesita."
+            log_info "Motor Docker: corre en los nodos de cómputo (nodo27, nodo28), el job maestro (nodo5) no lo necesita."
         elif docker info >/dev/null 2>&1; then
             log_info "Docker responde: $(docker version --format '{{.Server.Version}}' 2>/dev/null)"
         else

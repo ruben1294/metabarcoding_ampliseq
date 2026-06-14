@@ -11,6 +11,8 @@ _Amplicon Sequence Variants_ (ASVs) (DADA2), recorte de la región ITS con ITSx 
 ITS), inferencia taxonómica y
 análisis de diversidad (QIIME2), con reportes finales (MultiQC y reporte resumen).
 
+El objetivo de este _pipeline_ es llamar a nf-core/ampliseq y resolver la instalación de dependencias y la definición de parámetros para que puedas correr tu análisis de manera fluida y sencilla, sin preocuparte por instalar nada.
+
 ---
 
 ## 1. Estructura del proyecto
@@ -32,13 +34,13 @@ qiime2_ampliseq/
 ├── scripts/
 │   ├── 00_instalar_dependencias.sh    ← verifica e instala todo lo que falte
 │   ├── 01_generar_samplesheet.sh      ← crea la hoja de muestras desde los FASTQ
-│   ├── 02_verificar_entorno.sh        ← diagnóstico: verifica que todo esté listo
+│   ├── 02_verificar_entorno.sh        ← verifica que todo esté listo
 │   ├── 03_ejecutar_ampliseq.sh        ← ejecuta el análisis
 │   ├── 04_resumen_tiempos.sh          ← crea la tabla de tiempos por proceso de la corrida
 │   ├── lanzar_hpc.sh                  ← lanza el job maestro en el HPC
 │   ├── lanzar_hpc.slurm               ← script SLURM del job maestro
 │   ├── precargar_imagenes_docker_hpc.sh ← precarga imágenes Docker en nodo27/28 (HPC)
-│   ├── precargar_imagenes_apptainer_hpc.sh ← precarga imágenes .sif en LUSTRE (si hay Apptainer)
+│   ├── precargar_imagenes_apptainer_hpc.sh ← precarga imágenes .sif en LUSTRE
 │   ├── descargar_datos_prueba.sh      ← baja un conjunto pequeño y estándar para probar
 │   └── lib/                           ← funciones comunes (registro, entorno y marcador)
 ├── datos/crudos/                       ← ⬅️ pon aquí tus FASTQ (.fastq.gz)
@@ -52,7 +54,7 @@ qiime2_ampliseq/
 
 ## 2. Decisiones del flujo
 
-Al iniciar, los scripts te preguntan dónde correrás el flujo y qué marcador analizarás (si no las has fijado antes). Para no responder cada vez que corres un _script_, defínelas en `configuracion/parametros.sh`. En un HPC es obligatorio definirlas si lanzas el _pipeline_ sin terminal interactiva.
+Al iniciar, los _scripts_ te preguntan dónde correrás el flujo y qué marcador analizarás (si no las has fijado antes). Para no responder cada vez que corres un _script_, defínelas en `configuracion/parametros.sh`. En un HPC es obligatorio definirlas si lanzas el _pipeline_ sin terminal interactiva.
 
 ### a) Entorno donde correrá el _pipeline_
 

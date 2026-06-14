@@ -33,7 +33,7 @@ cabecera_registro "VERIFICACIÓN DEL ENTORNO. Proyecto: $PROYECTO"
 # Activamos el entorno lanzador si existe (para ver Java/Nextflow correctos)
 if command -v conda >/dev/null 2>&1; then
     log_info "conda: $(conda --version)"
-    source "$(conda info --base)/etc/profile.d/conda.sh"
+    source "$(dirname "$(dirname "${CONDA_EXE:-$(command -v conda)}")")/etc/profile.d/conda.sh"
     if conda env list | awk '{print $1}' | grep -qx "$ENV_LANZADOR"; then
         log_info "Entorno conda '$ENV_LANZADOR' existe"
         conda activate "$ENV_LANZADOR" 2>/dev/null

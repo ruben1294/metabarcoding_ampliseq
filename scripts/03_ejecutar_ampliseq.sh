@@ -11,9 +11,12 @@
 #  Guarda el comando exacto, el log y una copia de los parámetros usados.
 #
 #  Uso:   bash scripts/03_ejecutar_ampliseq.sh
+#         bash scripts/03_ejecutar_ampliseq.sh --entorno hpc   (sobreescribe parametros.sh)
+#         bash scripts/03_ejecutar_ampliseq.sh --proyecto corrida2  (sobreescribe parametros.sh)
 #         bash scripts/03_ejecutar_ampliseq.sh --marcador its   (sobreescribe parametros.sh)
 #         bash scripts/03_ejecutar_ampliseq.sh --dry-run   (solo prepara, no corre)
 #         bash scripts/03_ejecutar_ampliseq.sh -y          (no pide confirmación)
+#         bash scripts/03_ejecutar_ampliseq.sh --help      (muestra la ayuda)
 # =============================================================================
 set -euo pipefail
 
@@ -25,24 +28,74 @@ source "configuracion/parametros.sh"
 source "scripts/lib/registro.sh"
 source "scripts/lib/entorno.sh"
 source "scripts/lib/marcador.sh"
-iniciar_registro "03_ejecutar_ampliseq"
 
-# Opciones de línea de comandos
-# --marcador <its|16s|18s> sobreescribe el MARCADOR de parametros.sh solo para esta corrida
+# Ayuda de la línea de comandos
+mostrar_ayuda() {
+    cat <<'AYUDA'
+Uso: bash scripts/03_ejecutar_ampliseq.sh [opciones]
+
+Ejecuta el pipeline nf-core/ampliseq con la configuración de configuracion/parametros.sh.
+Las opciones de abajo sobreescriben, solo para esta corrida, lo definido en parametros.sh.
+
+Opciones:
+  -e, --entorno  <local|hpc>     Dónde correr el pipeline. Sobreescribe ENTORNO de
+                                 parametros.sh (y con él el archivo de recursos .config).
+  -p, --proyecto <nombre>        Nombre del proyecto. Sobreescribe PROYECTO de
+                                 parametros.sh (y con él las carpetas de resultados y logs).
+  -m, --marcador <its|16s|18s>   Marcador a analizar. Sobreescribe MARCADOR de
+                                 parametros.sh (y con él el archivo de parámetros .yaml).
+      --dry-run                  Solo prepara y muestra el comando, no corre Nextflow.
+  -y, --yes                      No pide confirmación de marcador y primers.
+  -h, --help                     Muestra esta ayuda y termina.
+
+Ejemplos:
+  bash scripts/03_ejecutar_ampliseq.sh
+  bash scripts/03_ejecutar_ampliseq.sh --entorno hpc --proyecto corrida2
+  bash scripts/03_ejecutar_ampliseq.sh -m its --dry-run
+AYUDA
+}
+
+# Opciones de línea de comandos. Las sobreescrituras se aplican solo a esta corrida;
+# parametros.sh no se toca. Capturamos los overrides antes de abrir el log porque
+# --proyecto cambia la carpeta de logs (DIR_LOGS).
 DRY_RUN="no"; ASUMIR_SI="no"
+PROYECTO_OVERRIDE=""; ENTORNO_OVERRIDE=""
 while [ $# -gt 0 ]; do
     case "$1" in
+        -h|--help)     mostrar_ayuda; exit 0 ;;
         --dry-run)     DRY_RUN="si" ;;
         -y|--yes)      ASUMIR_SI="si" ;;
+        -e|--entorno)
+            shift; [ $# -gt 0 ] || { log_error "--entorno necesita un valor (local o hpc)"; exit 1; }
+            ENTORNO_OVERRIDE="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')" ;;
+        --entorno=*)
+            ENTORNO_OVERRIDE="$(printf '%s' "${1#*=}" | tr '[:upper:]' '[:lower:]')" ;;
+        -p|--proyecto)
+            shift; [ $# -gt 0 ] || { log_error "--proyecto necesita un valor (el nombre del proyecto)"; exit 1; }
+            PROYECTO_OVERRIDE="$1" ;;
+        --proyecto=*)
+            PROYECTO_OVERRIDE="${1#*=}" ;;
         -m|--marcador)
             shift; [ $# -gt 0 ] || { log_error "--marcador necesita un valor (its, 16s o 18s)"; exit 1; }
             MARCADOR="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')" ;;
         --marcador=*)
             MARCADOR="$(printf '%s' "${1#*=}" | tr '[:upper:]' '[:lower:]')" ;;
-        *) log_error "Argumento desconocido: '$1' (usa --marcador, --dry-run o -y)"; exit 1 ;;
+        *) log_error "Argumento desconocido: '$1' (usa --entorno, --proyecto, --marcador, --dry-run, -y o --help)"; exit 1 ;;
     esac
     shift
 done
+
+# Aplicamos los overrides sobre lo que trajo parametros.sh. El de --proyecto recalcula
+# las carpetas derivadas (resultados/ y logs/) igual que parametros.sh, para que toda la
+# evidencia de esta corrida quede bajo el proyecto indicado.
+[ -n "$ENTORNO_OVERRIDE" ] && ENTORNO="$ENTORNO_OVERRIDE"
+if [ -n "$PROYECTO_OVERRIDE" ]; then
+    PROYECTO="$PROYECTO_OVERRIDE"
+    SALIDA="resultados/$PROYECTO"
+    DIR_LOGS="logs/$PROYECTO"
+fi
+
+iniciar_registro "03_ejecutar_ampliseq"
 
 # Definimos el entorno donde correrá el pipeline y el marcador a analizar
 seleccionar_entorno    # fija MOTOR y CONFIG_RECURSOS
@@ -53,7 +106,7 @@ activar_trap_errores
 # que nos saltamos esto para poder revisar el comando sin tener el entorno listo.
 if [ "$DRY_RUN" != "si" ]; then
     if command -v conda >/dev/null 2>&1; then
-        source "$(conda info --base)/etc/profile.d/conda.sh"
+        source "$(dirname "$(dirname "${CONDA_EXE:-$(command -v conda)}")")/etc/profile.d/conda.sh"
         conda activate "$ENV_LANZADOR" 2>/dev/null \
             || { log_error "no existe el entorno '$ENV_LANZADOR'. Corre antes: bash scripts/00_instalar_dependencias.sh"; exit 1; }
     fi
@@ -78,11 +131,11 @@ case "$MOTOR" in
     *) log_error "MOTOR no válido: '$MOTOR' (usa docker, singularity, apptainer o conda)"; exit 1 ;;
 esac
 
-# Las comprobaciones de motor y caché solo importan para correr de verdad; en
-# --dry-run las omitimos para poder revisar el comando sin Docker ni caché listos.
+# Las comprobaciones de motor y caché solo importan cuando el script se corre de verdad. En el
+# --dry-run las omitimos para poder revisar el comando sin que Docker ni la caché estén listos.
 if [ "$DRY_RUN" != "si" ]; then
     # Que el motor responda antes de empezar. En HPC el maestro (nodo5/27/28) solo
-    # manda las tareas a SLURM y el motor corre en los nodos de cómputo (nodo27, nodo28),
+    # manda las tareas a SLURM y el motor corre en los nodos de cómputo (nodo27 y nodo28),
     # así que aquí solo se exige 'sbatch'. En local el motor sí corre en esta máquina.
     if [ "$ENTORNO" = "hpc" ]; then
         command -v sbatch >/dev/null 2>&1 \
@@ -301,7 +354,7 @@ if [ -n "$EXTRA_PARAMS" ]; then
 fi
 
 # 6) Mostramos el resumen
-cabecera_registro "EJECUCIÓN DE nf-core/ampliseq. Proyecto: $PROYECTO"
+cabecera_registro "EJECUCIÓN DE nf-core/ampliseq."
 log_info "  Pipeline:        nf-core/ampliseq r${VERSION_PIPELINE}"
 log_info "  Entorno:         $ENTORNO  (recursos: $CONFIG_RECURSOS)"
 log_info "  Marcador:        $MARCADOR  (parámetros: $CONFIG_MARCADOR → $PARAMS_RUN)"
