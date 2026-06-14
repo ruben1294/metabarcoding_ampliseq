@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "Si usas este software, por favor cítalo así:"
-title: "QIIME2 ampliseq: metabarcoding con nf-core/ampliseq"
+title: "metabarcoding ampliseq: metabarcoding con nf-core/ampliseq"
 abstract: >-
   Flujo para análisis de metabarcoding a partir de secuenciación
   Illumina con nf-core/ampliseq, para tres marcadores: ITS de hongos, 16S de
@@ -14,8 +14,8 @@ authors:
 version: "0.1"
 date-released: "2026-06-13"
 license: MIT
-repository-code: "https://github.com/ruben1294/qiime2_ampliseq"
-url: "https://github.com/ruben1294/qiime2_ampliseq"
+repository-code: "https://github.com/ruben1294/metabarcoding_ampliseq"
+url: "https://github.com/ruben1294/metabarcoding_ampliseq"
 keywords:
   - metabarcoding
   - ITS

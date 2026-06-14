@@ -1,6 +1,6 @@
 # _Metabarcoding_ (ITS de hongos / 16S de procariotas / 18S de eucariotas) con nf-core/ampliseq
 
-[![shellcheck](https://github.com/ruben1294/qiime2_ampliseq/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/ruben1294/qiime2_ampliseq/actions/workflows/shellcheck.yml)
+[![shellcheck](https://github.com/ruben1294/metabarcoding_ampliseq/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/ruben1294/metabarcoding_ampliseq/actions/workflows/shellcheck.yml)
 
 Flujo de trabajo para hacer un análisis de _metabarcoding_ (también conocido como análisis de amplicones) a partir de secuencias amplificadas por PCR y secuenciadas con la plataforma Illumina, con tres
 marcadores genéticos posibles: la región ITS (*Internal Transcribed Spacer*) de hongos, el gen 16S rDNA de procariotas o el gen 18S rDNA de eucariotas.
@@ -18,7 +18,7 @@ El objetivo de este _pipeline_ es llamar a nf-core/ampliseq y resolver la instal
 ## 1. Estructura del proyecto
 
 ```
-qiime2_ampliseq/
+metabarcoding_ampliseq/
 ├── README.md                          ← este archivo
 ├── configuracion/
 │   ├── parametros.sh                  ← Edita aquí las decisiones y los datos de entrada
@@ -223,7 +223,7 @@ bash scripts/04_resumen_tiempos.sh        # usa el trace de Nextflow más recien
 
 Si este repo te ayudó, te agradecería una estrellita ⭐ y una cita:
 
-Castañeda-Martínez, R. (2026). *QIIME2 ampliseq: metabarcoding con nf-core/ampliseq* (v0.1) [Software]. GitHub. https://github.com/ruben1294/qiime2_ampliseq
+Castañeda-Martínez, R. (2026). *metabarcoding ampliseq: metabarcoding con nf-core/ampliseq* (v0.1) [Software]. GitHub. https://github.com/ruben1294/metabarcoding_ampliseq
 
 ### El _pipeline_ y sus herramientas
 
