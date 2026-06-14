@@ -18,6 +18,8 @@
 #  hace falta. Deben empezar con letra y contener solo letras, números o "_".
 #
 #  Uso:   bash scripts/01_generar_samplesheet.sh
+#         bash scripts/01_generar_samplesheet.sh --proyecto corrida2  (sobreescribe parametros.sh)
+#         bash scripts/01_generar_samplesheet.sh --help      (muestra la ayuda)
 # =============================================================================
 set -euo pipefail
 
@@ -27,10 +29,56 @@ source "configuracion/parametros.sh"
 
 # Registro (logging) común: INFO/WARN→stdout(.out), ERROR→stderr(.err)
 source "scripts/lib/registro.sh"
+
+# Ayuda de la línea de comandos
+mostrar_ayuda() {
+    cat <<'AYUDA'
+Uso: bash scripts/01_generar_samplesheet.sh [opciones]
+
+Crea la hoja de muestras (samplesheet) a partir de los FASTQ de CARPETA_FASTQ,
+según configuracion/parametros.sh. La opción de abajo sobreescribe, solo para
+esta corrida, lo definido en parametros.sh.
+
+Opciones:
+  -p, --proyecto <nombre>      Nombre del proyecto. Sobreescribe PROYECTO de
+                               parametros.sh (y con él la carpeta de logs).
+  -h, --help                   Muestra esta ayuda y termina.
+
+Ejemplos:
+  bash scripts/01_generar_samplesheet.sh
+  bash scripts/01_generar_samplesheet.sh --proyecto corrida2
+AYUDA
+}
+
+# Opciones de línea de comandos. Las sobreescrituras se aplican solo a esta corrida;
+# parametros.sh no se toca. Capturamos los overrides antes de abrir el log porque
+# --proyecto cambia la carpeta de logs (DIR_LOGS).
+PROYECTO_OVERRIDE=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -h|--help) mostrar_ayuda; exit 0 ;;
+        -p|--proyecto)
+            shift; [ $# -gt 0 ] || { log_error "--proyecto necesita un valor (el nombre del proyecto)"; exit 1; }
+            PROYECTO_OVERRIDE="$1" ;;
+        --proyecto=*)
+            PROYECTO_OVERRIDE="${1#*=}" ;;
+        *) log_error "Argumento desconocido: '$1' (usa --proyecto o --help)"; exit 1 ;;
+    esac
+    shift
+done
+
+# Aplicamos el override sobre lo que trajo parametros.sh. El de --proyecto recalcula
+# la carpeta de logs igual que parametros.sh (este script solo usa DIR_LOGS), para que
+# el registro de esta corrida quede bajo el proyecto indicado.
+if [ -n "$PROYECTO_OVERRIDE" ]; then
+    PROYECTO="$PROYECTO_OVERRIDE"
+    DIR_LOGS="logs/$PROYECTO"
+fi
+
 iniciar_registro "01_generar_samplesheet"
 activar_trap_errores
 
-cabecera_registro "GENERAR HOJA DE MUESTRAS. Proyecto: $PROYECTO"
+cabecera_registro "GENERAR HOJA DE MUESTRAS."
 
 log_info "Buscando FASTQ en: $CARPETA_FASTQ"
 [ -d "$CARPETA_FASTQ" ] || { log_error "no existe la carpeta $CARPETA_FASTQ"; exit 1; }
@@ -41,16 +89,16 @@ mkdir -p "$(dirname "$SAMPLESHEET")"
 derivar_nombre() {
     local base="$1"
     base="${base%.fastq.gz}"; base="${base%.fq.gz}"
-    # Quitar el indicador de lectura (uno solo) y luego los sufijos de Illumina.
+    # Quitamos el indicador de lectura (uno solo) y luego los sufijos de Illumina.
     # La alternación evita que un nombre que acaba en _1 (p. ej. una réplica)
     # pierda ese sufijo después de haber quitado _R1.
     base="$(printf '%s' "$base" \
         | sed -E 's/_(R1_001|R1|1)$//' \
         | sed -E 's/_L[0-9]{3}$//' \
         | sed -E 's/_S[0-9]+$//')"
-    # Sanear: reemplazar caracteres no válidos por "_"
+    # Reemplazamos caracteres no válidos por "_"
     base="$(printf '%s' "$base" | tr -c 'A-Za-z0-9_' '_')"
-    # Debe empezar con letra; si no, anteponer "S_"
+    # Debe empezar con letra, si no, anteponer "S_"
     [[ "$base" =~ ^[A-Za-z] ]] || base="S_${base}"
     printf '%s' "$base"
 }
@@ -84,9 +132,8 @@ for r1 in "${R1S[@]}"; do
         continue
     fi
 
-    # Derivar el R2 correspondiente. El indicador de lectura va al final del
-    # nombre, antes de la extensión; lo reemplazamos solo ahí (no en la ruta ni
-    # en el nombre de la muestra) probando los tres estilos.
+    # Derivamos el R2 correspondiente. El indicador de lectura va al final del
+    # nombre, antes de la extensión.
     dir="$(dirname "$r1")"; nom="$(basename "$r1")"
     cuerpo="$nom"; ext=""
     case "$nom" in
@@ -110,8 +157,8 @@ for r1 in "${R1S[@]}"; do
     N=$((N+1))
 done
 
-# Nombres de muestra repetidos: ampliseq abortaría a mitad de corrida, así que lo
-# atajamos aquí. Pasa si dos FASTQ distintos reducen al mismo nombre.
+# ampliseq abortaría a mitad de corrida si encuentra dos nombres de muestra repetidos, así que lo
+# corregimos aquí. Pasa si dos FASTQ diferentes se cambian al mismo nombre.
 dups="$(cut -f1 "$SAMPLESHEET" | tail -n +2 | sort | uniq -d)"
 if [ -n "$dups" ]; then
     log_error "Nombres de muestra repetidos en $SAMPLESHEET:"

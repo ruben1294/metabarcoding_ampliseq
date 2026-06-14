@@ -15,6 +15,8 @@
 #
 #  Uso:   bash scripts/04_resumen_tiempos.sh                  (usa el trace más reciente)
 #         bash scripts/04_resumen_tiempos.sh <ruta_al_trace.txt>
+#         bash scripts/04_resumen_tiempos.sh --proyecto corrida2  (sobreescribe parametros.sh)
+#         bash scripts/04_resumen_tiempos.sh --help      (muestra la ayuda)
 # =============================================================================
 set -euo pipefail
 
@@ -23,18 +25,66 @@ cd "$DIR_PROYECTO"
 source "configuracion/parametros.sh"
 
 source "scripts/lib/registro.sh"
+
+# Ayuda de la línea de comandos
+mostrar_ayuda() {
+    cat <<'AYUDA'
+Uso: bash scripts/04_resumen_tiempos.sh [opciones] [ruta_al_trace.txt]
+
+Arma la tabla de tiempos por proceso a partir del execution_trace_*.txt de la
+corrida. Sin ruta, usa el trace más reciente de resultados/<PROYECTO>/pipeline_info/.
+La opción de abajo sobreescribe, solo para esta corrida, lo definido en parametros.sh.
+
+Opciones:
+  -p, --proyecto <nombre>      Nombre del proyecto. Sobreescribe PROYECTO de
+                               parametros.sh (y con él las carpetas de resultados y logs).
+  -h, --help                   Muestra esta ayuda y termina.
+
+Ejemplos:
+  bash scripts/04_resumen_tiempos.sh
+  bash scripts/04_resumen_tiempos.sh --proyecto corrida2
+  bash scripts/04_resumen_tiempos.sh resultados/corrida2/pipeline_info/execution_trace_*.txt
+AYUDA
+}
+
+# Opciones de línea de comandos. Las sobreescrituras se aplican solo a esta corrida;
+# parametros.sh no se toca. Capturamos los overrides antes de abrir el log porque
+# --proyecto cambia las carpetas de resultados (SALIDA) y de logs (DIR_LOGS).
+PROYECTO_OVERRIDE=""; TRACE_ARG=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -h|--help) mostrar_ayuda; exit 0 ;;
+        -p|--proyecto)
+            shift; [ $# -gt 0 ] || { log_error "--proyecto necesita un valor (el nombre del proyecto)"; exit 1; }
+            PROYECTO_OVERRIDE="$1" ;;
+        --proyecto=*)
+            PROYECTO_OVERRIDE="${1#*=}" ;;
+        -*) log_error "Argumento desconocido: '$1' (usa --proyecto, una ruta de trace o --help)"; exit 1 ;;
+        *)
+            [ -z "$TRACE_ARG" ] || { log_error "solo se acepta una ruta de trace; sobra '$1'"; exit 1; }
+            TRACE_ARG="$1" ;;
+    esac
+    shift
+done
+
+# Aplicamos el override sobre lo que trajo parametros.sh. El de --proyecto recalcula
+# las carpetas de resultados y logs igual que parametros.sh, para que el trace y el
+# registro de esta corrida queden bajo el proyecto indicado.
+if [ -n "$PROYECTO_OVERRIDE" ]; then
+    PROYECTO="$PROYECTO_OVERRIDE"
+    SALIDA="resultados/$PROYECTO"
+    DIR_LOGS="logs/$PROYECTO"
+fi
+
 iniciar_registro "04_resumen_tiempos"
 activar_trap_errores
 
-cabecera_registro "RESUMEN DE TIEMPOS. Proyecto: $PROYECTO"
+cabecera_registro "RESUMEN DE TIEMPOS."
 
 # 1) Elegir el trace: el que se pase como argumento o el más reciente de pipeline_info
 DIR_INFO="$SALIDA/pipeline_info"
-if [ "$#" -ge 1 ]; then
-    case "$1" in
-        -h|--help) log_info "Uso: bash scripts/04_resumen_tiempos.sh [ruta_al_trace.txt]"; exit 0 ;;
-    esac
-    TRACE="$1"
+if [ -n "$TRACE_ARG" ]; then
+    TRACE="$TRACE_ARG"
     [ -f "$TRACE" ] || { log_error "no existe el archivo de trace: $TRACE"; exit 1; }
 else
     [ -d "$DIR_INFO" ] || { log_error "no existe $DIR_INFO. ¿Ya corriste el script 03?"; exit 1; }

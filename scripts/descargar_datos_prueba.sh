@@ -3,17 +3,15 @@
 #  descargar_datos_prueba.sh
 #  Autor: Rubén Castañeda-Martínez
 # -----------------------------------------------------------------------------
-#  Descarga un conjunto de datos pequeño y estándar (nf-core/test-datasets) para probar
-#  el flujo de punta a punta. Elige el caso según el marcador:
-#    16s: 16S pareado (primers 515F/806R, igual que marcador_16s.yaml)
-#    its: ITS single-end de Illumina (3 muestras)
-#  Para 18S no hay set de prueba incluido en nf-core/test-datasets, usa tus
-#  propios FASTQ (o el set 16s para una prueba, sin valor biológico).
+#  Descarga un conjunto de datos pequeño y estándar para probar el flujo completo. Elige el caso según el marcador:
+#    16s: 16S pareado (primers 515F/806R, igual que marcador_16s.yaml) [nf-core/test-datasets]
+#    its: ITS single-end de Illumina (3 muestras) [nf-core/test-datasets]
+#    18s: 18S pareado, tres muestras del SRA usando fastq-dump (necesita sra-toolkit)
 #  Los archivos se guardan en CARPETA_FASTQ y se renombran para que el script 01
-#  los reconozca. El entorno (local/hpc) es independiente: el mismo dato sirve.
+#  los reconozca.
 #
 #  Uso:   bash scripts/descargar_datos_prueba.sh 16s
-#         bash scripts/descargar_datos_prueba.sh its --force   (reemplaza lo que haya)
+#         bash scripts/descargar_datos_prueba.sh 18s --force   (reemplaza lo que haya)
 # =============================================================================
 set -euo pipefail
 
@@ -28,20 +26,20 @@ activar_trap_errores
 # Argumentos: el caso (16s|its) y el opcional --force
 CASO=""; FORCE="no"
 for arg in "$@"; do
-    case "$arg" in
-        16s|its) CASO="$arg" ;;
-        18s) log_error "no hay set de prueba 18S en nf-core/test-datasets. Usa tus propios FASTQ, o baja el set 16s solo para probar la plomería del flujo."; exit 1 ;;
+    # normaliza a minúscula para aceptar 16S/16s, ITS/its, 18S/18s
+    case "${arg,,}" in
+        16s|its|18s) CASO="${arg,,}" ;;
         --force) FORCE="si" ;;
-        *) log_error "argumento desconocido: '$arg' (usa 16s o its, y --force)"; exit 1 ;;
+        *) log_error "argumento desconocido: '$arg' (usa 16s, its o 18s, y --force)"; exit 1 ;;
     esac
 done
-[ -z "$CASO" ] && { log_error "falta el caso. Uso: bash scripts/descargar_datos_prueba.sh <16s|its> [--force]"; exit 1; }
+[ -z "$CASO" ] && { log_error "falta el caso. Uso: bash scripts/descargar_datos_prueba.sh <16s|its|18s> [--force]"; exit 1; }
 
 BASE="https://raw.githubusercontent.com/nf-core/test-datasets/ampliseq/testdata"
 DEST="$CARPETA_FASTQ"
 mkdir -p "$DEST"
 
-# No pisar datos previos sin permiso
+# No sobreescribir datos previos sin permiso
 if compgen -G "$DEST/*.fastq.gz" >/dev/null 2>&1; then
     if [ "$FORCE" = "si" ]; then
         log_warn "Borrando los .fastq.gz previos de $DEST"
@@ -87,6 +85,20 @@ case "$CASO" in
         log_info "   MARCADOR=\"its\"   DISENO_LECTURAS=\"single\""
         log_info "   Si cutadapt descarta casi todo por los primers, agrega"
         log_info "   EXTRA_PARAMS=\"--retain_untrimmed\" para que la prueba corra igual."
+        ;;
+    18s)
+        log_info "18S pareado del SRA (3 muestras, vía fastq-dump)"
+        command -v fastq-dump >/dev/null 2>&1 || {
+            log_error "no encontré fastq-dump. Instala sra-toolkit (conda install -c bioconda sra-tools)."
+            exit 1
+        }
+        # --split-files --gzip deja SRR..._1/_2.fastq.gz, patrón que el script 01 reconoce
+        for run in SRR23942186 SRR23942187 SRR23942188; do
+            log_info "  $run"
+            fastq-dump --split-files --gzip --outdir "$DEST" "$run"
+        done
+        log_info "Ajusta en configuracion/parametros.sh:"
+        log_info "   MARCADOR=\"18s\"   DISENO_LECTURAS=\"paired\""
         ;;
 esac
 

@@ -15,7 +15,7 @@
 # 1) Identidad del proyecto
 # Nombre corto del proyecto. Nombra las subcarpetas de resultados y logs
 # (resultados/<PROYECTO>/ y logs/<PROYECTO>/, ver sección 15). Usa un nombre sin espacios.
-PROYECTO="prueba_ITS"
+PROYECTO="prueba_16S"
 
 
 # 2) Entorno de ejecución (local o HPC)
@@ -42,7 +42,7 @@ NODOS_MAESTRO="nodo5 nodo27 nodo28"
 # Si lo dejas vacío, el script te preguntará al arrancar (02 y 03).
 # Los parámetros de cada marcador (primers, base de datos, región) están en su
 # propio archivo .yaml. Edítalos ahí, no acá (ver sección 16).
-MARCADOR="its"
+MARCADOR="16s"
 
 
 # 4) Motor de ejecución (cómo se aíslan los programas)
@@ -84,7 +84,7 @@ CARPETA_FASTQ="datos/crudos"
 # Diseño de las lecturas:
 #   "paired" = pareadas (R1 + R2).
 #   "single" = individuales (solo R1).
-DISENO_LECTURAS="single"
+DISENO_LECTURAS="paired"
 
 # Hoja de muestras que genera el script 01 a partir de CARPETA_FASTQ.
 SAMPLESHEET="configuracion/samplesheet.tsv"
@@ -113,11 +113,11 @@ IGNORAR_RECORTE_FALLIDO="no"
 
 
 # 7) Recorte y filtrado de calidad de lecturas (DADA2)
-# Longitud a la que se truncan las lecturas FW; 0 = sin truncado (auto según TRUNC_QMIN). --trunclenf
-TRUNCLENF="0"
+# Longitud a la que se truncan las lecturas FW. 0 = sin truncado (auto según TRUNC_QMIN). Depende de la región del marcador a analizar, pero como regla general, se sugiere usar 150 pb e ir ajustando dependiendo de la calidad obtenida. --trunclenf
+TRUNCLENF="150"
 
-# Longitud a la que se truncan las lecturas RV (solo pareadas); 0 = sin truncado. --trunclenr
-TRUNCLENR="0"
+# Longitud a la que se truncan las lecturas RV (solo pareadas). Depende de la región del marcador a analizar, pero como regla general, se sugiere usar 150 pb e ir ajustando dependiendo de la calidad obtenida. 0 = sin truncado. --trunclenr
+TRUNCLENR="150"
 
 # Calidad mínima (phred) para el truncado automático cuando TRUNCLENF/R = 0. --trunc_qmin
 TRUNC_QMIN="25"

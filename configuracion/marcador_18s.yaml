@@ -7,14 +7,21 @@
 #  está en primers_18s.tsv.
 # =============================================================================
 
+# Primers Euk1391F-EukBr
+FW_primer: "GTACACACCGCCCGTC"
+RV_primer: "TGATCCTTCTGCAGGTTCACCTAC"
 
 # Primers para hemoparásitos
-FW_primer: "TTTGTCTGSTTAATTSCG"
-RV_primer: "CACAGACCTGTTATTGC"
+#FW_primer: "TTTGTCTGSTTAATTSCG"
+#RV_primer: "CACAGACCTGTTATTGC"
 
 # Primers (TAReuk454FWD1 / TAReukREV3, región V4)
 #FW_primer: "CCAGCASCYGCGGTAATTCC"
 #RV_primer: "ACTTTCGTTCTTGATYRA"
+
+
+
+
 
 # Base de datos de referencia para la inferencia taxonómica.
 # Cada una se usa por un clasificador distinto en ampliseq:

@@ -14,6 +14,7 @@
 #         bash scripts/03_ejecutar_ampliseq.sh --entorno hpc   (sobreescribe parametros.sh)
 #         bash scripts/03_ejecutar_ampliseq.sh --proyecto corrida2  (sobreescribe parametros.sh)
 #         bash scripts/03_ejecutar_ampliseq.sh --marcador its   (sobreescribe parametros.sh)
+#         bash scripts/03_ejecutar_ampliseq.sh --diseno single  (sobreescribe parametros.sh)
 #         bash scripts/03_ejecutar_ampliseq.sh --dry-run   (solo prepara, no corre)
 #         bash scripts/03_ejecutar_ampliseq.sh -y          (no pide confirmación)
 #         bash scripts/03_ejecutar_ampliseq.sh --help      (muestra la ayuda)
@@ -44,6 +45,8 @@ Opciones:
                                  parametros.sh (y con él las carpetas de resultados y logs).
   -m, --marcador <its|16s|18s>   Marcador a analizar. Sobreescribe MARCADOR de
                                  parametros.sh (y con él el archivo de parámetros .yaml).
+  -d, --diseno <paired|single>   Diseño de lecturas. Sobreescribe DISENO_LECTURAS de
+                                 parametros.sh (pareado o single-end).
       --dry-run                  Solo prepara y muestra el comando, no corre Nextflow.
   -y, --yes                      No pide confirmación de marcador y primers.
   -h, --help                     Muestra esta ayuda y termina.
@@ -51,7 +54,7 @@ Opciones:
 Ejemplos:
   bash scripts/03_ejecutar_ampliseq.sh
   bash scripts/03_ejecutar_ampliseq.sh --entorno hpc --proyecto corrida2
-  bash scripts/03_ejecutar_ampliseq.sh -m its --dry-run
+  bash scripts/03_ejecutar_ampliseq.sh -m its -d single --dry-run
 AYUDA
 }
 
@@ -80,7 +83,12 @@ while [ $# -gt 0 ]; do
             MARCADOR="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')" ;;
         --marcador=*)
             MARCADOR="$(printf '%s' "${1#*=}" | tr '[:upper:]' '[:lower:]')" ;;
-        *) log_error "Argumento desconocido: '$1' (usa --entorno, --proyecto, --marcador, --dry-run, -y o --help)"; exit 1 ;;
+        -d|--diseno)
+            shift; [ $# -gt 0 ] || { log_error "--diseno necesita un valor (paired o single)"; exit 1; }
+            DISENO_LECTURAS="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')" ;;
+        --diseno=*)
+            DISENO_LECTURAS="$(printf '%s' "${1#*=}" | tr '[:upper:]' '[:lower:]')" ;;
+        *) log_error "Argumento desconocido: '$1' (usa --entorno, --proyecto, --marcador, --diseno, --dry-run, -y o --help)"; exit 1 ;;
     esac
     shift
 done
@@ -129,6 +137,10 @@ mkdir -p "$NXF_SINGULARITY_CACHEDIR" "$NXF_CONDA_CACHEDIR" "$DIR_LOGS" "$SALIDA"
 case "$MOTOR" in
     docker|singularity|apptainer|conda) : ;;
     *) log_error "MOTOR no válido: '$MOTOR' (usa docker, singularity, apptainer o conda)"; exit 1 ;;
+esac
+case "$DISENO_LECTURAS" in
+    paired|single) : ;;
+    *) log_error "DISENO_LECTURAS no válido: '$DISENO_LECTURAS' (usa paired o single)"; exit 1 ;;
 esac
 
 # Las comprobaciones de motor y caché solo importan cuando el script se corre de verdad. En el
@@ -358,6 +370,7 @@ cabecera_registro "EJECUCIÓN DE nf-core/ampliseq."
 log_info "  Pipeline:        nf-core/ampliseq r${VERSION_PIPELINE}"
 log_info "  Entorno:         $ENTORNO  (recursos: $CONFIG_RECURSOS)"
 log_info "  Marcador:        $MARCADOR  (parámetros: $CONFIG_MARCADOR → $PARAMS_RUN)"
+log_info "  Diseño:          $DISENO_LECTURAS"
 log_info "  Motor:           $MOTOR"
 log_info "  Entrada:         ${ENTRADA[*]}"
 log_info "  Primers:         FW=$FW${RV:+  RV=$RV}"

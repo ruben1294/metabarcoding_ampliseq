@@ -7,6 +7,8 @@
 #  nada: herramientas, versiones, datos de entrada y configuración.
 #
 #  Uso:   bash scripts/02_verificar_entorno.sh
+#         bash scripts/02_verificar_entorno.sh --proyecto corrida2  (sobreescribe parametros.sh)
+#         bash scripts/02_verificar_entorno.sh --help      (muestra la ayuda)
 # =============================================================================
 set -uo pipefail
 
@@ -19,18 +21,62 @@ source "configuracion/parametros.sh"
 source "scripts/lib/registro.sh"
 source "scripts/lib/entorno.sh"
 source "scripts/lib/marcador.sh"
+
+# Ayuda de la línea de comandos
+mostrar_ayuda() {
+    cat <<'AYUDA'
+Uso: bash scripts/02_verificar_entorno.sh [opciones]
+
+Revisa que el entorno esté listo (herramientas, datos y configuración) según
+configuracion/parametros.sh, sin instalar ni cambiar nada. La opción de abajo
+sobreescribe, solo para esta corrida, lo definido en parametros.sh.
+
+Opciones:
+  -p, --proyecto <nombre>      Nombre del proyecto. Sobreescribe PROYECTO de
+                               parametros.sh (y con él la carpeta de logs).
+  -h, --help                   Muestra esta ayuda y termina.
+
+Ejemplos:
+  bash scripts/02_verificar_entorno.sh
+  bash scripts/02_verificar_entorno.sh --proyecto corrida2
+AYUDA
+}
+
+# Opciones de línea de comandos. Las sobreescrituras se aplican solo a esta corrida,
+# parametros.sh no se toca. Capturamos los overrides antes de abrir el log porque
+# --proyecto cambia la carpeta de logs (DIR_LOGS).
+PROYECTO_OVERRIDE=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -h|--help) mostrar_ayuda; exit 0 ;;
+        -p|--proyecto)
+            shift; [ $# -gt 0 ] || { log_error "--proyecto necesita un valor (el nombre del proyecto)"; exit 1; }
+            PROYECTO_OVERRIDE="$1" ;;
+        --proyecto=*)
+            PROYECTO_OVERRIDE="${1#*=}" ;;
+        *) log_error "Argumento desconocido: '$1' (usa --proyecto o --help)"; exit 1 ;;
+    esac
+    shift
+done
+
+# Aplicamos el override sobre lo que trajo parametros.sh. El de --proyecto recalcula
+# la carpeta de logs igual que parametros.sh (este script solo usa DIR_LOGS), para que
+# el registro de esta corrida quede bajo el proyecto indicado.
+if [ -n "$PROYECTO_OVERRIDE" ]; then
+    PROYECTO="$PROYECTO_OVERRIDE"
+    DIR_LOGS="logs/$PROYECTO"
+fi
+
 iniciar_registro "02_verificar_entorno"
 
-# No activamos el trap de errores: el verificador debe seguir reportando todo
-# aunque algo falle. Lo que falte queda como ERROR en el archivo .err.
+# Para que el script pueda capturar todos los errores, no activamos el trap de errores, ya que se deben de reportar todos los errores al final. Lo que falte queda como ERROR en el archivo .err.
 
-# Las dos decisiones del flujo: fijan qué motor, recursos y parámetros verificar
-seleccionar_entorno    # fija MOTOR y CONFIG_RECURSOS
-seleccionar_marcador   # fija CONFIG_MARCADOR
+seleccionar_entorno    # definimos MOTOR y CONFIG_RECURSOS
+seleccionar_marcador   # definimos CONFIG_MARCADOR
 
-cabecera_registro "VERIFICACIÓN DEL ENTORNO. Proyecto: $PROYECTO"
+cabecera_registro "VERIFICACIÓN DEL ENTORNO."
 
-# Activamos el entorno lanzador si existe (para ver Java/Nextflow correctos)
+# Activamos el entorno lanzador si existe (para ver que Java y Nextflow sean correctos)
 if command -v conda >/dev/null 2>&1; then
     log_info "conda: $(conda --version)"
     source "$(dirname "$(dirname "${CONDA_EXE:-$(command -v conda)}")")/etc/profile.d/conda.sh"
@@ -67,7 +113,7 @@ else
     log_error "Nextflow no disponible  → corre scripts/00_instalar_dependencias.sh"
 fi
 
-# SLURM (solo en HPC): Nextflow necesita 'sbatch' en el maestro para mandar las tareas
+# SLURM (solo en HPC): Nextflow necesita 'sbatch' en el job maestro para mandar las tareas
 if [ "$ENTORNO" = "hpc" ]; then
     if command -v sbatch >/dev/null 2>&1; then
         log_info "SLURM: sbatch disponible"
@@ -76,12 +122,12 @@ if [ "$ENTORNO" = "hpc" ]; then
     fi
 fi
 
-# Motor de contenedores. En HPC el maestro (nodo5/27/28) solo orquesta y el motor
-# corre en los nodos de cómputo (nodo27, nodo28), así que no se exige aquí.
+# Motor de contenedores. En el HPC, el job maestro (nodo5/27/28) solo orquesta y el motor
+# corre en los nodos de cómputo (nodo27, nodo28), así que no se pide aquí.
 case "$MOTOR" in
     docker)
         if [ "$ENTORNO" = "hpc" ]; then
-            log_info "Motor: Docker en los nodos de cómputo (nodo27, nodo28). El maestro no necesita Docker."
+            log_info "Motor: Docker en los nodos de cómputo (nodo27, nodo28). El job maestro no necesita Docker."
         elif docker info >/dev/null 2>&1; then
             log_info "Docker responde: $(docker version --format '{{.Server.Version}}' 2>/dev/null)"
         else
@@ -94,7 +140,7 @@ case "$MOTOR" in
         elif command -v singularity >/dev/null 2>&1; then
             log_info "Singularity: $(singularity --version 2>&1)"
         elif [ "$ENTORNO" = "hpc" ]; then
-            log_warn "Singularity/Apptainer no disponible en el maestro. Si lo usas como motor, cárgalo con 'module load'"
+            log_warn "Singularity/Apptainer no disponible en el job maestro. Si lo usas como motor, cárgalo con 'module load'"
         else
             log_error "Apptainer/Singularity no disponible (MOTOR=$MOTOR)  → corre scripts/00_instalar_dependencias.sh"
         fi
@@ -176,8 +222,7 @@ log_info "======================================================================
 
 # El verificador corre sin 'set -e' a propósito: recorre TODO el entorno y reporta
 # cada problema con log_error sin abortar en el primero. Ya con la lista completa,
-# refleja el resultado en el código de salida (≠ 0 si hubo algún error), para poder
-# encadenarlo (p. ej. 02 && 03) o usarlo en automatización.
+# refleja el resultado en el código de salida (≠ 0 si hubo algún error).
 if [ "${LOG_ERRORES:-0}" -gt 0 ]; then
     log_warn "Verificación terminada con $LOG_ERRORES problema(s). Revisa los [ERROR] de arriba y corrígelos."
     exit 1
