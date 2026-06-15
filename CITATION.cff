@@ -1,10 +1,9 @@
 cff-version: 1.2.0
 message: "Si usas este software, por favor cítalo así:"
-title: "metabarcoding ampliseq: metabarcoding con nf-core/ampliseq"
+title: "metabarcoding ampliseq: uso de nf-core/ampliseq para realizar metabarcoding."
 abstract: >-
-  Flujo para análisis de metabarcoding a partir de secuenciación
-  Illumina con nf-core/ampliseq, para tres marcadores: ITS de hongos, 16S de
-  procariotas y 18S de eucariotas. Incluye scripts para instalar dependencias,
+  Flujo para análisis de metabarcoding a partir de secuencias metagenómicas secuenciadas con
+  Illumina usando nf-core/ampliseq, para tres marcadores: ITS, 16S y 18S. Incluye scripts para instalar dependencias,
   generar la hoja de muestras, verificar el entorno, ejecutar (en local o en un
   HPC con SLURM) y resumir los tiempos de la corrida.
 type: software
@@ -18,6 +17,7 @@ repository-code: "https://github.com/ruben1294/metabarcoding_ampliseq"
 url: "https://github.com/ruben1294/metabarcoding_ampliseq"
 keywords:
   - metabarcoding
+  - análisis de amplicones
   - ITS
   - 16S
   - 18S

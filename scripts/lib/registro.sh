@@ -17,10 +17,10 @@
 # =============================================================================
 
 # Paleta de colores por nivel. Quedan vacías ("") cuando el color está apagado,
-# así la salida es texto plano sin tocar las funciones.
+# así la salida de los logs es texto plano sin tocar las funciones.
 C_INFO=""; C_WARN=""; C_ERROR=""; C_DEBUG=""; C_RESET=""
 
-# El color se decide solo: por defecto se enciende si la salida es una terminal.
+# Si la salida es una terminal, se activa el color.
 # Se puede forzar con LOG_COLOR=si / LOG_COLOR=no, o apagar con NO_COLOR=1.
 _configurar_colores() {
     local usar="no"

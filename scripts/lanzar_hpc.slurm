@@ -60,6 +60,13 @@ fi
 command -v conda >/dev/null 2>&1 \
     || { echo "[maestro] no encontré conda. Cárgalo (module load) o instálalo antes de lanzar." >&2; exit 1; }
 
+# Fuerza el color en los mensajes de registro.sh. Bajo SLURM el stdout del maestro
+# es el archivo --output (no una terminal), así que el modo 'auto' apagaría el color;
+# con esto las líneas [INFO]/[WARN] salen en verde/amarillo en logs/ampliseq_maestro_%j.out,
+# igual que las de Nextflow. Los .out/.err por-corrida siguen en texto plano: iniciar_registro
+# les quita los códigos ANSI con sed de todos modos.
+export LOG_COLOR=si
+
 # Corre el pipeline sin preguntar (-y). El script 03 lee ENTORNO y MARCADOR de
 # parametros.sh y arma el comando de Nextflow con -profile docker y la config del HPC.
 bash scripts/03_ejecutar_ampliseq.sh -y
