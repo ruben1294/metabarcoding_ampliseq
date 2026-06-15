@@ -33,6 +33,17 @@ ENTORNO="local"
 # Docker: nodo5, nodo27 y nodo28.
 NODOS_MAESTRO="nodo5 nodo27 nodo28"
 
+# Cuenta (grupo) y partición/cola de SLURM. Son tu identidad de cobro en el clúster:
+# si SLURM responde "Invalid account or account/partition combination", aquí se cambia.
+# En OMICA (CICESE) el grupo es 'metagenomica' y la partición 'cicese'; cámbialos al
+# tuyo (p. ej. CUENTA_SLURM="la_paz"). Confírmalos con:
+#   sacctmgr show assoc user=$USER format=Account,Partition
+# Una sola fuente de verdad: de aquí se propagan a recursos_hpc.config (vía variable
+# de entorno), a lanzar_hpc.sh (sbatch) y a precargar_imagenes_docker_hpc.sh (srun).
+# Van con 'export' para que Nextflow las pase al .config de recursos.
+export CUENTA_SLURM="metagenomica"
+export PARTICION_SLURM="cicese"
+
 
 # 3) Marcador a analizar (ITS, 16S o 18S)
 # ¿Qué amplicón vas a analizar?

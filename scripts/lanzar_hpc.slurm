@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=ampliseq_maestro
+# OJO: --account y --partition aquí son solo el RESPALDO para el caso de lanzar este
+# .slurm directo con 'sbatch'. El camino recomendado (scripts/lanzar_hpc.sh) lee
+# CUENTA_SLURM y PARTICION_SLURM de configuracion/parametros.sh y los pasa por la CLI
+# de sbatch, que sobrescribe estas dos líneas. Para cambiar de grupo edita
+# parametros.sh; si además lanzas con 'sbatch' directo, actualiza también estas dos.
 #SBATCH --account=metagenomica
 #SBATCH --partition=cicese
 # Nodo por defecto si lanzas este .slurm directo. scripts/lanzar_hpc.sh lo

@@ -74,7 +74,7 @@ log_info "$N imágenes a precargar. Lista en: $LISTA"
 for n in "${NODOS[@]}"; do
     log_info "=========================================================================="
     log_info "Precargando imágenes en $n …"
-    srun -w "$n" -p cicese --account=metagenomica bash -lc '
+    srun -w "$n" -p "${PARTICION_SLURM:-cicese}" --account="${CUENTA_SLURM:-metagenomica}" bash -lc '
         ok=0; fail=0
         while IFS= read -r img; do
             [ -z "$img" ] && continue

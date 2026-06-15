@@ -18,9 +18,11 @@ DIR_PROYECTO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$DIR_PROYECTO"
 source "configuracion/parametros.sh"
 
-# Nodos permitidos para el maestro (orden de preferencia) y partición de SLURM
+# Nodos permitidos para el maestro (orden de preferencia), cuenta y partición de SLURM
+# (de parametros.sh; el valor tras ':-' es el respaldo de OMICA).
 read -ra NODOS <<< "${NODOS_MAESTRO:-nodo5 nodo27 nodo28}"
-PARTICION="cicese"
+CUENTA="${CUENTA_SLURM:-metagenomica}"
+PARTICION="${PARTICION_SLURM:-cicese}"
 
 command -v sbatch >/dev/null 2>&1 \
     || { echo "[lanzador] no encontré 'sbatch'. Lanza desde un nodo del clúster." >&2; exit 1; }
@@ -51,5 +53,7 @@ if [ -z "$elegido" ]; then
     echo "[lanzador] todos ocupados, el job maestro se calendarizará en $elegido (CPUs libres: $mejor)."
 fi
 
-echo "[lanzador] enviando el job maestro a $elegido…"
-sbatch --nodelist="$elegido" "$@" scripts/lanzar_hpc.slurm
+echo "[lanzador] enviando el job maestro a $elegido (cuenta: $CUENTA, partición: $PARTICION)…"
+# --account/--partition/--nodelist en la CLI de sbatch sobrescriben las directivas
+# #SBATCH estáticas de lanzar_hpc.slurm, así que la cuenta sale de parametros.sh.
+sbatch --account="$CUENTA" --partition="$PARTICION" --nodelist="$elegido" "$@" scripts/lanzar_hpc.slurm
