@@ -238,7 +238,7 @@ En BibTeX:
   author    = {Castañeda-Martínez, Rubén},
   title     = {metabarcoding ampliseq: uso de nf-core/ampliseq para realizar metabarcoding},
   year      = {2026},
-  version   = {v0.1.0},
+  version   = {v0.1.1},
   publisher = {Zenodo},
   doi       = {10.5281/zenodo.20711275},
   url       = {https://doi.org/10.5281/zenodo.20711275}
