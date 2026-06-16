@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=ampliseq_maestro
-# OJO: --account y --partition aquí son solo el RESPALDO para el caso de lanzar este
+# OJO: --account y --partition aquí son solo el respaldo para el caso de lanzar este
 # .slurm directo con 'sbatch'. El camino recomendado (scripts/lanzar_hpc.sh) lee
 # CUENTA_SLURM y PARTICION_SLURM de configuracion/parametros.sh y los pasa por la CLI
-# de sbatch, que sobrescribe estas dos líneas. Para cambiar de grupo edita
-# parametros.sh; si además lanzas con 'sbatch' directo, actualiza también estas dos.
+# de sbatch, que sobrescribe estas dos líneas. Para cambiar de grupo, edita
+# parametros.sh. Si además lanzas con 'sbatch' directo, actualiza también estas dos.
 #SBATCH --account=metagenomica
 #SBATCH --partition=cicese
 # Nodo por defecto si lanzas este .slurm directo. scripts/lanzar_hpc.sh lo
@@ -15,7 +15,7 @@
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=4G
 #SBATCH --time=72:00:00
-# El log del maestro va a logs/ (no a logs/<PROYECTO>/): las directivas #SBATCH son
+# El log del job maestro va a logs/ (no a logs/<PROYECTO>/): las directivas #SBATCH son
 # estáticas y no expanden $PROYECTO. El log del análisis sí queda en logs/<PROYECTO>/.
 #SBATCH --output=logs/ampliseq_maestro_%j.out
 #SBATCH --error=logs/ampliseq_maestro_%j.err
@@ -65,11 +65,7 @@ fi
 command -v conda >/dev/null 2>&1 \
     || { echo "[maestro] no encontré conda. Cárgalo (module load) o instálalo antes de lanzar." >&2; exit 1; }
 
-# Fuerza el color en los mensajes de registro.sh. Bajo SLURM el stdout del maestro
-# es el archivo --output (no una terminal), así que el modo 'auto' apagaría el color;
-# con esto las líneas [INFO]/[WARN] salen en verde/amarillo en logs/ampliseq_maestro_%j.out,
-# igual que las de Nextflow. Los .out/.err por-corrida siguen en texto plano: iniciar_registro
-# les quita los códigos ANSI con sed de todos modos.
+# Fuerza el color en los mensajes de registro.sh
 export LOG_COLOR=si
 
 # Corre el pipeline sin preguntar (-y). El script 03 lee ENTORNO y MARCADOR de

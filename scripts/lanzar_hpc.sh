@@ -6,8 +6,8 @@
 #  Envía el job maestro al HPC eligiendo un nodo disponible de los permitidos
 #  (NODOS_MAESTRO en parametros.sh: nodo5, nodo27 o nodo28). El job maestro es el orquestador y pide pocos recursos
 #  (2 CPU, 4 GB), y puede compartir nodo27/nodo28 con las tareas hijas. Prefiere el
-#  primero de la lista con CPUs libres; si todos están llenos toma el de más CPUs
-#  libres y encola ahí. El --nodelist que pasa aquí sobrescribe el de lanzar_hpc.slurm.
+#  primero de la lista con CPUs libres. Si todos están llenos, elige el de más CPUs
+#  libres y manda ahí al job maestro. El --nodelist que pasa aquí sobrescribe el de lanzar_hpc.slurm.
 #
 #  Uso (desde la raíz del repo):  bash scripts/lanzar_hpc.sh
 # =============================================================================
@@ -19,7 +19,7 @@ cd "$DIR_PROYECTO"
 source "configuracion/parametros.sh"
 
 # Nodos permitidos para el maestro (orden de preferencia), cuenta y partición de SLURM
-# (de parametros.sh; el valor tras ':-' es el respaldo de OMICA).
+# (vienen de parametros.sh, el valor después de ':-' es el respaldo de OMICA).
 read -ra NODOS <<< "${NODOS_MAESTRO:-nodo5 nodo27 nodo28}"
 CUENTA="${CUENTA_SLURM:-metagenomica}"
 PARTICION="${PARTICION_SLURM:-cicese}"

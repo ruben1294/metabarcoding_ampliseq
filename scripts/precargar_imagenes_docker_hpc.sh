@@ -3,16 +3,16 @@
 #  precargar_imagenes_docker_hpc.sh
 #  Autor: Rubén Castañeda-Martínez
 # -----------------------------------------------------------------------------
-#  Precarga (docker pull) todas las imágenes de nf-core/ampliseq en el Docker LOCAL
-#  de cada nodo de cómputo (NODOS_TAREAS_DOCKER, p. ej. nodo27 nodo28). El almacén
+#  Precarga todas las imágenes de nf-core/ampliseq en el Docker LOCAL
+#  de cada nodo de cómputo (NODOS_TAREAS_DOCKER, p. ej. nodo27 nodo28), usando docker pull. El almacén
 #  de Docker es por nodo y la conectividad al registro es intermitente, así que
 #  precargar una vez, con reintentos, evita que una tarea falle a mitad de corrida
 #  por un pull lento.
 #
 #  Córrelo desde el nodo interactivo (puede hacer srun a los nodos de cómputo). El
 #  motor debe ser docker. La lista de imágenes la saca 'nextflow inspect' del
-#  pipeline ya cacheado; ese paso, al correr aquí (con internet), también precarga
-#  los plugins de Nextflow que el maestro necesitará offline.
+#  pipeline ya cacheado. Ese paso, al correr aquí (con internet), también precarga
+#  los plugins de Nextflow que el job maestro necesitará offline.
 #
 #  Uso (desde la raíz del repo):  bash scripts/precargar_imagenes_docker_hpc.sh
 # =============================================================================
