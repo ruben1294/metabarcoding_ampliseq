@@ -139,7 +139,8 @@ bash scripts/descargar_datos_prueba.sh 16s   # 16S pareado (515F/806R)
 bash scripts/descargar_datos_prueba.sh its   # ITS single-end de Illumina
 
 # Y para probar con un conjunto pequeño para 18S
-bash scripts/descargar_datos_prueba.sh 18s   # 18S pareado, un conjunto pequeño de tres muestras de (necesitas instalar sra-toolkit, pendiente)
+bash scripts/descargar_datos_prueba.sh 18s   # 18S pareado, un conjunto pequeño de tres muestras de Patchett et al. (2024), BioProject PRJNA947667,
+# doi:10.1007/s00436-024-08136-x (18S de branquia de Salmo salar) (usa fastq-dump, necesitas instalar sra-toolkit)
 
 # ajusta el MARCADOR y DISENO_LECTURAS según sea el caso (el script te lo recuerda)
 bash scripts/01_generar_samplesheet.sh

@@ -7,6 +7,8 @@
 #    16s: 16S pareado (primers 515F/806R, igual que marcador_16s.yaml) [nf-core/test-datasets]
 #    its: ITS single-end de Illumina (3 muestras) [nf-core/test-datasets]
 #    18s: 18S pareado, tres muestras del SRA usando fastq-dump (necesita sra-toolkit)
+#         Procedencia: Patchett et al. (2024), BioProject PRJNA947667,
+#         doi:10.1007/s00436-024-08136-x (18S de branquia de Salmo salar).
 #  Los archivos se guardan en CARPETA_FASTQ y se renombran para que el script 01
 #  los reconozca.
 #
