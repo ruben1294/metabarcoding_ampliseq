@@ -1,0 +1,58 @@
+name: nextflow-config
+
+# Valida que los .config de Nextflow (DSL de Groovy) parseen sin error.
+on:
+  push:
+    paths:
+      - 'configuracion/**.config'
+      - '.github/workflows/nextflow-config.yml'
+  pull_request:
+    paths:
+      - 'configuracion/**.config'
+
+jobs:
+  nextflow-config:
+    name: Validar configs de Nextflow
+    runs-on: ubuntu-latest
+    env:
+      # Versión fija, la misma que corre en el HPC. OJO: producción usa "la más
+      # reciente" (VERSION_NEXTFLOW="" en configuracion/parametros.sh). Se debe actualizar también este número para que el CI lo valide con el mismo
+      # parser que el clúster. El launcher descarga exactamente esta versión vía NXF_VER.
+      NXF_VER: "26.04.3"
+    steps:
+      - uses: actions/checkout@v4
+
+      # Nextflow 26 necesita Java 17+.
+      - name: Instalar Java 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Instalar Nextflow ${{ env.NXF_VER }}
+        run: |
+          curl -s https://get.nextflow.io | bash
+          sudo install nextflow /usr/local/bin/nextflow
+          nextflow -version
+
+      # Cada .config se copia como config raíz de un proyecto vacío y se resuelve con
+      # 'nextflow config'. Si el parser falla, el comando sale con código != 0 y el
+      # job falla. No ejecuta nada del pipeline: solo parsea/resuelve la config.
+      # Los System.getenv(...) devuelven null en CI y caen al fallback con '?:', así
+      # que no hace falta simular el entorno del HPC.
+      - name: Validar parseo de cada .config
+        run: |
+          status=0
+          for cfg in configuracion/*.config; do
+            echo "::group::$cfg"
+            tmp="$(mktemp -d)"
+            cp "$cfg" "$tmp/nextflow.config"
+            if ( cd "$tmp" && nextflow config >/dev/null ); then
+              echo "OK: $cfg"
+            else
+              echo "FALLO de parseo: $cfg"
+              status=1
+            fi
+            echo "::endgroup::"
+          done
+          exit "$status"

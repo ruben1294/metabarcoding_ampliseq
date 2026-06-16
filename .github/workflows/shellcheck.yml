@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Versión anclada (la misma que se usa en local), por reproducibilidad.
+      # Versión fija (la misma que se usa en local), para efectos de reproducibilidad.
       - name: Instalar ShellCheck v0.11.0
         run: |
           ver="v0.11.0"

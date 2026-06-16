@@ -1,6 +1,6 @@
 # _Metabarcoding_ (ITS de hongos / 16S de procariotas / 18S de eucariotas) con nf-core/ampliseq
 
-[![shellcheck](https://github.com/ruben1294/metabarcoding_ampliseq/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/ruben1294/metabarcoding_ampliseq/actions/workflows/shellcheck.yml) [![DOI](https://zenodo.org/badge/1266027343.svg)](https://doi.org/10.5281/zenodo.20711275)
+[![shellcheck](https://github.com/ruben1294/metabarcoding_ampliseq/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/ruben1294/metabarcoding_ampliseq/actions/workflows/shellcheck.yml) [![nextflow-config](https://github.com/ruben1294/metabarcoding_ampliseq/actions/workflows/nextflow-config.yml/badge.svg)](https://github.com/ruben1294/metabarcoding_ampliseq/actions/workflows/nextflow-config.yml) [![DOI](https://zenodo.org/badge/1266027343.svg)](https://doi.org/10.5281/zenodo.20711275)
 
 Flujo de trabajo para hacer un análisis de _metabarcoding_ (también conocido como análisis de amplicones) a partir de secuencias amplificadas por PCR y secuenciadas con la plataforma Illumina, con tres
 marcadores genéticos posibles: la región ITS (*Internal Transcribed Spacer*) de hongos, el gen 16S rDNA de procariotas o el gen 18S rDNA de eucariotas.
