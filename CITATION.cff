@@ -10,14 +10,20 @@ type: software
 authors:
   - family-names: "Castañeda-Martínez"
     given-names: "Rubén"
-version: "0.1"
-date-released: "2026-06-13"
+    orcid: "https://orcid.org/0000-0001-9272-7968"
+version: "0.1.0"
+date-released: "2026-06-16"
 license: MIT
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.20711275"
+    description: "Concept DOI (todas las versiones en Zenodo)"
 repository-code: "https://github.com/ruben1294/metabarcoding_ampliseq"
 url: "https://github.com/ruben1294/metabarcoding_ampliseq"
 keywords:
   - metabarcoding
   - análisis de amplicones
+  - Nextflow
   - ITS
   - 16S
   - 18S

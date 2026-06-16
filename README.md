@@ -1,6 +1,6 @@
 # _Metabarcoding_ (ITS de hongos / 16S de procariotas / 18S de eucariotas) con nf-core/ampliseq
 
-[![shellcheck](https://github.com/ruben1294/metabarcoding_ampliseq/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/ruben1294/metabarcoding_ampliseq/actions/workflows/shellcheck.yml)
+[![shellcheck](https://github.com/ruben1294/metabarcoding_ampliseq/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/ruben1294/metabarcoding_ampliseq/actions/workflows/shellcheck.yml) [![DOI](https://zenodo.org/badge/1266027343.svg)](https://doi.org/10.5281/zenodo.20711275)
 
 Flujo de trabajo para hacer un análisis de _metabarcoding_ (también conocido como análisis de amplicones) a partir de secuencias amplificadas por PCR y secuenciadas con la plataforma Illumina, con tres
 marcadores genéticos posibles: la región ITS (*Internal Transcribed Spacer*) de hongos, el gen 16S rDNA de procariotas o el gen 18S rDNA de eucariotas.
@@ -229,7 +229,23 @@ Dentro de `resultados/<PROYECTO>/` encontrarás (entre otros):
 
 Si este repo te ayudó, te agradecería una estrellita ⭐ y una cita:
 
-Castañeda-Martínez, R. (2026). *metabarcoding ampliseq: uso de nf-core/ampliseq para realizar metabarcoding* (v0.1) [Software]. GitHub. https://github.com/ruben1294/metabarcoding_ampliseq
+Castañeda-Martínez, R. (2026). *metabarcoding ampliseq: uso de nf-core/ampliseq para realizar metabarcoding* (v0.1.1) [Software]. Zenodo. https://doi.org/10.5281/zenodo.20711275
+
+En BibTeX:
+
+```bibtex
+@software{castaneda_martinez_metabarcoding_ampliseq_2026,
+  author    = {Castañeda-Martínez, Rubén},
+  title     = {metabarcoding ampliseq: uso de nf-core/ampliseq para realizar metabarcoding},
+  year      = {2026},
+  version   = {v0.1.0},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.20711275},
+  url       = {https://doi.org/10.5281/zenodo.20711275}
+}
+```
+
+También puedes usar el botón **"Cite this repository"** del repo (lee el `CITATION.cff`).
 
 ### 7.2 El _pipeline_ y sus herramientas
 
