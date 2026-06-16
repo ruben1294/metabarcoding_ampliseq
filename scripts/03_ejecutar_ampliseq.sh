@@ -131,7 +131,19 @@ else
     export NXF_SINGULARITY_CACHEDIR="$DIR_PROYECTO/.cache/singularity"
 fi
 export NXF_CONDA_CACHEDIR="$DIR_PROYECTO/.cache/conda"
-mkdir -p "$NXF_SINGULARITY_CACHEDIR" "$NXF_CONDA_CACHEDIR" "$DIR_LOGS" "$SALIDA"
+mkdir -p "$NXF_CONDA_CACHEDIR" "$DIR_LOGS" "$SALIDA"
+
+# La caché de imágenes puede estar en LUSTRE compartido (HPC con apptainer/singularity).
+# Si DIR_CACHE_SINGULARITY apunta a una carpeta sin permiso de escritura (p. ej. un área de
+# bases de solo lectura), avisamos claro en lugar del crudo "Permission denied" del mkdir y
+# damos las dos salidas: una ruta tuya o cambiar a Docker.
+if ! mkdir -p "$NXF_SINGULARITY_CACHEDIR" 2>/dev/null; then
+    log_error "No puedo crear la caché de imágenes: $NXF_SINGULARITY_CACHEDIR"
+    log_error "  Te falta permiso de escritura ahí. Dos salidas:"
+    log_error "    1) Apunta DIR_CACHE_SINGULARITY (parametros.sh) a una carpeta tuya en LUSTRE y reprecarga."
+    log_error "    2) Usa MOTOR=docker: en OMICA no necesita esta caché (las imágenes se jalan en nodo27/28)."
+    exit 1
+fi
 
 # 1) Validaciones básicas
 case "$MOTOR" in

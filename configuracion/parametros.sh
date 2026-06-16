@@ -74,13 +74,17 @@ ENV_LANZADOR="ampliseq-lanzador"
 # recursos_hpc.config).
 NODOS_TAREAS_DOCKER="nodo27 nodo28"
 
-# Solo para motor apptainer/singularity: las imágenes .sif y las
-# bases se precargan una vez en el nodo interactivo y se guardan en LUSTRE.
-#   DIR_BASES_HPC        carpeta raíz de bases de datos en LUSTRE
-#   DIR_CACHE_SINGULARITY carpeta de imágenes .sif (la llena scripts/precargar_imagenes_apptainer_hpc.sh)
-# Ajústalas a una ruta donde tengas permiso de escritura.
+# Solo para motor apptainer/singularity: las imágenes .sif se precargan una vez en el
+# nodo interactivo (con internet) y se leen desde una carpeta compartida que también vean
+# los nodos de cómputo. Son dos rutas con permisos distintos, no las confundas:
+#   DIR_BASES_HPC         raíz de bases de datos en LUSTRE. Suele ser un área compartida de
+#                         solo lectura: de aquí solo LEES las bases (SILVA, UNITE, etc.).
+#   DIR_CACHE_SINGULARITY carpeta de imágenes .sif que ESCRIBE precargar_imagenes_apptainer_hpc.sh.
+#                         Tiene que estar en una ruta tuya con permiso de escritura, NO dentro
+#                         del área de bases compartida. Si la dejas vacía, usa la caché del
+#                         proyecto ($DIR_PROYECTO/.cache/singularity).
 DIR_BASES_HPC="/LUSTRE/bioinformatica_data/BD/metagenomica"
-DIR_CACHE_SINGULARITY="$DIR_BASES_HPC/cache_singularity_ampliseq"
+DIR_CACHE_SINGULARITY=""
 
 
 # 5) Versiones del pipeline original y de Nextflow
