@@ -33,8 +33,8 @@ Las opciones de abajo sobreescriben, solo para esta corrida, lo definido en para
 
 Opciones:
   -e, --entorno  <local|hpc>   Dónde se correrá el pipeline. Sobreescribe ENTORNO de
-                               parametros.sh (decide si se instala Apptainer en local y
-                               cómo se verifica el motor).
+                               parametros.sh (afina los mensajes del motor; p. ej. la
+                               sugerencia de 'module load apptainer' en HPC).
   -p, --proyecto <nombre>      Nombre del proyecto. Sobreescribe PROYECTO de
                                parametros.sh (y con él la carpeta de logs).
   -h, --help                   Muestra esta ayuda y termina.
@@ -88,15 +88,17 @@ case "$MOTOR" in
     *) log_error "MOTOR no válido: '$MOTOR' (usa docker, singularity, apptainer o conda)"; exit 1 ;;
 esac
 
-# El entorno lanzador siempre lleva Java + Nextflow. Con el motor predeterminado
+# El entorno lanzador siempre lleva Java y Nextflow. Con el motor predeterminado
 # (Docker) no hace falta más: en local lo da Docker Desktop y en HPC corre en los
-# nodos de cómputo. Solo instalamos Apptainer por conda si lo fuerzas como motor,
-# no está en el PATH y corres en local.
+# nodos de cómputo. Si fuerzas Apptainer/Singularity como motor y no está en el PATH,
+# intentamos instalarlo por conda en un paso aparte best-effort (ver punto 4b), tanto en
+# local como en HPC. En HPC casi siempre conviene el del módulo (module load apptainer),
+# pero igual probamos y, si falla, lo avisamos sin abortar.
 INSTALAR_APPTAINER="no"
 if [ "$MOTOR" = "singularity" ] || [ "$MOTOR" = "apptainer" ]; then
     if command -v apptainer >/dev/null 2>&1 || command -v singularity >/dev/null 2>&1; then
         :
-    elif [ "$ENTORNO" = "local" ]; then
+    else
         INSTALAR_APPTAINER="si"
     fi
 fi
@@ -126,19 +128,18 @@ conda config --add channels conda-forge  >/dev/null 2>&1 || true
 conda config --set channel_priority strict >/dev/null 2>&1 || true
 log_info "Canales conda configurados (conda-forge > bioconda > defaults)."
 
-# 3) Definimos los paquetes del entorno lanzador
+# 3) Definimos los paquetes del entorno lanzador. Apptainer NO va aquí: lo instalamos
+# aparte y best-effort (punto 4b) para que un fallo suyo no arrastre a Java/Nextflow.
 PAQUETES=( "openjdk=17" )
 if [ -n "${VERSION_NEXTFLOW:-}" ]; then
     PAQUETES+=( "nextflow=${VERSION_NEXTFLOW}" )
 else
     PAQUETES+=( "nextflow" )
 fi
-[ "$INSTALAR_APPTAINER" = "si" ] && PAQUETES+=( "apptainer" )
 log_info "Paquetes a instalar: ${PAQUETES[*]}"
 
 # Paquetes de respaldo (sin versión fija) por si falla usar la versión exacta.
 PAQUETES_FLEX=( "openjdk=17" "nextflow" )
-[ "$INSTALAR_APPTAINER" = "si" ] && PAQUETES_FLEX+=( "apptainer" )
 
 # Apagamos nounset durante las operaciones de conda: install/update/create activan de
 # paso el entorno base, cuyos scripts de activación (p. ej. qt-main_activate.sh) leen
@@ -167,6 +168,19 @@ fi
 
 conda activate "$ENV_LANZADOR"
 log_info "Entorno '$ENV_LANZADOR' activo."
+
+# 4b) Apptainer como paso aparte y best-effort. Lo separamos del install crítico para que
+# un fallo (típico en HPC, donde el apptainer de conda-forge no siempre funciona sin
+# setuid/namespaces) no aborte el script ni arrastre a Java/Nextflow. Si falla, lo avisamos
+# y seguimos. El detalle y la sugerencia de 'module load' los da el punto 5b.
+if [ "$INSTALAR_APPTAINER" = "si" ]; then
+    log_info "Apptainer no está en el PATH. Intento instalarlo por conda…"
+    if conda install -n "$ENV_LANZADOR" -y apptainer; then
+        log_info "Apptainer instalado por conda."
+    else
+        log_warn "No se pudo instalar Apptainer por conda. Continúo sin abortar (ver punto 5b)."
+    fi
+fi
 
 # 5) nf-core tools (opcional, no es indispensable para ejecutar el flujo)
 # El solver clásico de conda se atora resolviendo el árbol de nf-core, forzamos

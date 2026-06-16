@@ -140,7 +140,8 @@ case "$MOTOR" in
         elif command -v singularity >/dev/null 2>&1; then
             log_info "Singularity: $(singularity --version 2>&1)"
         elif [ "$ENTORNO" = "hpc" ]; then
-            log_warn "Singularity/Apptainer no disponible en el job maestro. Si lo usas como motor, cárgalo con 'module load'"
+            log_warn "Singularity/Apptainer no disponible en el job maestro. El script 00 intenta"
+            log_warn "  instalarlo por conda. Si no quedó, cárgalo con un módulo (p. ej. module load apptainer)."
         else
             log_error "Apptainer/Singularity no disponible (MOTOR=$MOTOR)  → corre scripts/00_instalar_dependencias.sh"
         fi
