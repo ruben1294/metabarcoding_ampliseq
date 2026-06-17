@@ -224,8 +224,15 @@ case "$MOTOR" in
         ;;
 esac
 
-# 6) Variables de caché en el disco grande (evita llenar el disco del SO)
-export NXF_SINGULARITY_CACHEDIR="$DIR_PROYECTO/.cache/singularity"
+# 6) Variables de caché en el disco grande (evita llenar el disco del SO). Con apptainer o
+# singularity las imágenes van en referencias/imagenes, la misma ruta que usan el script 03 y
+# el precargado. En el resto, la caché del proyecto.
+if [ "$MOTOR" = "apptainer" ] || [ "$MOTOR" = "singularity" ]; then
+    export NXF_SINGULARITY_CACHEDIR="${DIR_REFERENCIAS:-$DIR_PROYECTO/referencias}/imagenes"
+else
+    export NXF_SINGULARITY_CACHEDIR="$DIR_PROYECTO/.cache/singularity"
+fi
+export NXF_APPTAINER_CACHEDIR="$NXF_SINGULARITY_CACHEDIR"
 export NXF_CONDA_CACHEDIR="$DIR_PROYECTO/.cache/conda"
 mkdir -p "$NXF_SINGULARITY_CACHEDIR" "$NXF_CONDA_CACHEDIR"
 

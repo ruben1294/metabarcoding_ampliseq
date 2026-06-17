@@ -22,6 +22,13 @@ singularity/
 *.sif
 *.img
 
+# Carpeta de referencias del motor apptainer (imágenes .sif y bases, pesadas, GB).
+# Versionamos la estructura y el LEEME, ignoramos el contenido.
+referencias/**
+!referencias/**/
+!referencias/**/.gitkeep
+!referencias/LEEME.txt
+
 # Datos crudos de secuenciación (nunca subir a GitHub)
 datos/crudos/*
 !datos/crudos/LEEME.txt

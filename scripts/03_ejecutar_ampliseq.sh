@@ -121,17 +121,41 @@ if [ "$DRY_RUN" != "si" ]; then
     command -v nextflow >/dev/null 2>&1 || { log_error "Nextflow no disponible. Corre: bash scripts/00_instalar_dependencias.sh"; exit 1; }
 fi
 
-# Cachés de Nextflow. En HPC con motor apptainer/singularity las imágenes .sif viven
-# en LUSTRE compartido (precargadas con scripts/precargar_imagenes_apptainer_hpc.sh) para que
-# los nodos de cómputo, sin internet, las lean. En el resto, caché local del proyecto.
-if [ "$ENTORNO" = "hpc" ] && { [ "$MOTOR" = "apptainer" ] || [ "$MOTOR" = "singularity" ]; }; then
-    export NXF_SINGULARITY_CACHEDIR="${DIR_CACHE_SINGULARITY:-$DIR_PROYECTO/.cache/singularity}"
+# Cachés de Nextflow. Con motor apptainer o singularity, las imágenes .sif y las bases
+# taxonómicas se guardan y reutilizan en referencias/ (imagenes/ y bases/, ver DIR_REFERENCIAS
+# en parametros.sh): el pipeline las baja una vez y en las siguientes corridas las relee. En
+# docker y conda no aplica, queda una ruta local por defecto.
+DIR_BASES_REF=""
+if [ "$MOTOR" = "apptainer" ] || [ "$MOTOR" = "singularity" ]; then
+    DIR_REFERENCIAS="${DIR_REFERENCIAS:-$DIR_PROYECTO/referencias}"
+    export NXF_SINGULARITY_CACHEDIR="$DIR_REFERENCIAS/imagenes"
     export NXF_APPTAINER_CACHEDIR="$NXF_SINGULARITY_CACHEDIR"
+    DIR_BASES_REF="$DIR_REFERENCIAS/bases"
 else
     export NXF_SINGULARITY_CACHEDIR="$DIR_PROYECTO/.cache/singularity"
 fi
 export NXF_CONDA_CACHEDIR="$DIR_PROYECTO/.cache/conda"
-mkdir -p "$NXF_SINGULARITY_CACHEDIR" "$NXF_CONDA_CACHEDIR" "$DIR_LOGS" "$SALIDA"
+mkdir -p "$NXF_CONDA_CACHEDIR" "$DIR_LOGS" "$SALIDA"
+
+# La caché de imágenes (referencias/imagenes con apptainer o singularity) puede estar en una
+# ruta compartida. Si no tiene permiso de escritura, avisamos claro en lugar del crudo
+# "Permission denied" del mkdir, y damos las dos salidas.
+if ! mkdir -p "$NXF_SINGULARITY_CACHEDIR" 2>/dev/null; then
+    log_error "No puedo crear la caché de imágenes: $NXF_SINGULARITY_CACHEDIR"
+    log_error "  Te falta permiso de escritura ahí. Salidas:"
+    log_error "    1) Apunta DIR_REFERENCIAS (parametros.sh) a una carpeta tuya con escritura (en HPC, LUSTRE)."
+    log_error "    2) Usa MOTOR=docker: en OMICA no necesita esta caché (las imágenes se jalan en nodo27/28)."
+    exit 1
+fi
+
+# Con apptainer o singularity, la carpeta de bases que el pipeline llena y reutiliza
+# (ref_taxonomy_storage).
+if { [ "$MOTOR" = "apptainer" ] || [ "$MOTOR" = "singularity" ]; } && ! mkdir -p "$DIR_BASES_REF" 2>/dev/null; then
+    log_error "No puedo crear la carpeta de bases: $DIR_BASES_REF"
+    log_error "  Te falta permiso de escritura ahí. Apunta DIR_REFERENCIAS (parametros.sh) a una"
+    log_error "  carpeta tuya con escritura (en HPC, una ruta compartida en LUSTRE)."
+    exit 1
+fi
 
 # 1) Validaciones básicas
 case "$MOTOR" in
@@ -203,6 +227,15 @@ if [ "$DRY_RUN" != "si" ]; then
                 exit 1
             fi
             log_info "Imágenes de contenedor desde la caché: $NXF_SINGULARITY_CACHEDIR"
+        fi
+
+        # Con apptainer o singularity las bases también deben estar precargadas para correr
+        # offline (los nodos no tienen internet). Si usas dada_ref_tax_custom con tus propios
+        # archivos, puedes ignorar este aviso.
+        if { [ "$MOTOR" = "apptainer" ] || [ "$MOTOR" = "singularity" ]; } && [ -z "$(ls -A "$DIR_BASES_REF" 2>/dev/null)" ]; then
+            log_warn "La carpeta de bases está vacía: $DIR_BASES_REF"
+            log_warn "  Si el marcador baja la base por nombre (dada_ref_taxonomy), precárgala en el"
+            log_warn "  nodo interactivo: bash scripts/precargar_imagenes_apptainer_hpc.sh"
         fi
     fi
 fi
@@ -350,6 +383,14 @@ CMD=( nextflow run nf-core/ampliseq
       --outdir "$SALIDA"
       -resume
       -ansi-log false )
+
+# Con apptainer o singularity, el pipeline guarda y reutiliza las bases taxonómicas en
+# referencias/bases (storeDir nativo de ampliseq): las baja una vez y en las siguientes
+# corridas las relee. En un HPC sin internet en los nodos, precárgalas antes con
+# precargar_imagenes_apptainer_hpc.sh.
+if [ "$MOTOR" = "apptainer" ] || [ "$MOTOR" = "singularity" ]; then
+    CMD+=( --ref_taxonomy_storage "$DIR_BASES_REF" )
+fi
 
 # Metadatos (solo si existe el archivo)
 if [ -n "$METADATA" ] && [ -f "$METADATA" ]; then
