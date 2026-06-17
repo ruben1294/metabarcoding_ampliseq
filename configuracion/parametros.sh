@@ -61,9 +61,9 @@ MARCADOR="16s"
 # cámbialo si quieres forzar otro:
 #   "docker"      = contenedores Docker (local con integración WSL, en HPC corre
 #                   en los nodos de cómputo con Docker).
-#   "singularity" = contenedores Singularity (alternativa en HPC).
-#   "apptainer"   = sucesor de Singularity. Recomendado en un HPC sin internet: las
-#                   imágenes .sif se precargan una vez y se guardan en LUSTRE compartido.
+#   "singularity" = contenedores Singularity (alternativa en HPC). Usa referencias/ como apptainer.
+#   "apptainer"   = sucesor de Singularity. Recomendado en un HPC sin internet: las imágenes
+#                   .sif y las bases se precargan una vez y se reutilizan desde referencias/.
 #   "conda"       = un entorno conda por herramienta, sin contenedor (más lento).
 MOTOR="auto"
 
@@ -74,17 +74,19 @@ ENV_LANZADOR="ampliseq-lanzador"
 # recursos_hpc.config).
 NODOS_TAREAS_DOCKER="nodo27 nodo28"
 
-# Solo para motor apptainer/singularity: las imágenes .sif se precargan una vez en el
-# nodo interactivo (con internet) y se leen desde una carpeta compartida que también vean
-# los nodos de cómputo. Son dos rutas con permisos distintos, no las confundas:
-#   DIR_BASES_HPC         raíz de bases de datos en LUSTRE. Suele ser un área compartida de
-#                         solo lectura: de aquí solo LEES las bases (SILVA, UNITE, etc.).
-#   DIR_CACHE_SINGULARITY carpeta de imágenes .sif que ESCRIBE precargar_imagenes_apptainer_hpc.sh.
-#                         Tiene que estar en una ruta tuya con permiso de escritura, NO dentro
-#                         del área de bases compartida. Si la dejas vacía, usa la caché del
-#                         proyecto ($DIR_PROYECTO/.cache/singularity).
+# Solo para motores apptainer y singularity: carpeta única donde el pipeline guarda y reutiliza
+# lo pesado, para no rebajarlo en cada corrida:
+#   referencias/imagenes  imágenes .sif de los contenedores (NXF_SINGULARITY_CACHEDIR)
+#   referencias/bases     bases taxonómicas que baja el pipeline (--ref_taxonomy_storage)
+# Por defecto cuelga del proyecto. En HPC, si los nodos de cómputo no ven el proyecto o no
+# puedes escribir ahí, apúntala a una carpeta tuya en LUSTRE (compartida y con escritura).
+# Vacía = referencias/ dentro del proyecto.
+DIR_REFERENCIAS=""
+
+# Raíz de bases compartidas en LUSTRE (solo lectura). De aquí solo LEES bases ya montadas por
+# tu clúster, si decides apuntar dada_ref_tax_custom a ellas en el YAML del marcador. No la
+# confundas con DIR_REFERENCIAS, que sí necesita escritura.
 DIR_BASES_HPC="/LUSTRE/bioinformatica_data/BD/metagenomica"
-DIR_CACHE_SINGULARITY=""
 
 
 # 5) Versiones del pipeline original y de Nextflow

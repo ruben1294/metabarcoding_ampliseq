@@ -1,0 +1,19 @@
+CARPETA DE REFERENCIAS (motor apptainer)
+========================================
+
+Aquí el pipeline guarda y reutiliza lo pesado cuando el motor es apptainer, para no
+volver a bajarlo en cada corrida. Cada cosa va en su lugar:
+
+    imagenes/   imágenes .sif de los contenedores
+    bases/      bases de datos taxonómicas que baja el pipeline
+
+No subas el contenido al repo (son varios GB). El .gitignore ignora todo lo de adentro
+y conserva solo la estructura de carpetas.
+
+Para llenarla de una vez en un HPC sin internet en los nodos de cómputo, corre en el nodo
+interactivo (el único con salida a internet):
+
+    bash scripts/precargar_imagenes_apptainer_hpc.sh
+
+Puedes mover esta carpeta fuera del proyecto (por ejemplo a tu espacio en LUSTRE) con la
+variable DIR_REFERENCIAS de configuracion/parametros.sh.
