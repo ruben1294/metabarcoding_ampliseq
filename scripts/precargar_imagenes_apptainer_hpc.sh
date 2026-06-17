@@ -8,7 +8,7 @@
 #  del marcador en referencias/bases (ver DIR_REFERENCIAS en parametros.sh).
 #
 #  Córrelo UNA vez en el nodo interactivo (el único con salida a internet). Las imágenes las
-#  baja 'nf-core download' (modo 'amend'). Las bases las baja con wget desde las mismas URL
+#  baja 'nf-core (pipelines) download' (modo 'amend'). Las bases las baja con wget desde las mismas URL
 #  que usa el pipeline, con su nombre original, para que la corrida offline las reutilice
 #  (storeDir de ampliseq). Luego el script 03 corre offline leyendo de referencias/.
 #
@@ -32,6 +32,18 @@ fi
 # nf-core tools hace la descarga; apptainer/singularity construye los .sif
 command -v nf-core >/dev/null 2>&1 \
     || { log_error "no encontré 'nf-core'. Instálalo en el nodo interactivo: pip install nf-core"; exit 1; }
+
+# nf-core 3.0 (oct 2024) movió los comandos de pipeline bajo 'nf-core pipelines'. Las versiones
+# nuevas (4.x) usan 'nf-core pipelines download'; las viejas (<3.0) usan 'nf-core download'.
+# Detectamos cuál acepta esta instalación para no atarnos a una sola.
+if nf-core pipelines download --help >/dev/null 2>&1; then
+    NFCORE_DOWNLOAD=(nf-core pipelines download)
+elif nf-core download --help >/dev/null 2>&1; then
+    NFCORE_DOWNLOAD=(nf-core download)
+else
+    log_error "esta versión de nf-core no acepta ni 'nf-core pipelines download' ni 'nf-core download' (revisa: nf-core --version)"
+    exit 1
+fi
 command -v apptainer >/dev/null 2>&1 || command -v singularity >/dev/null 2>&1 \
     || { log_error "no encontré apptainer ni singularity aquí; hace falta uno para construir los .sif."; exit 1; }
 
@@ -53,7 +65,7 @@ log_info "(esto tarda: son ~15-20 imágenes; déjalo correr)"
 # y que NXF_SINGULARITY_CACHEDIR apunte a la caché compartida.
 TMP_DL="$(mktemp -d)"
 trap 'rm -rf "$TMP_DL"' EXIT
-NXF_OFFLINE=false nf-core download ampliseq \
+NXF_OFFLINE=false "${NFCORE_DOWNLOAD[@]}" ampliseq \
     --revision "$VERSION_PIPELINE" \
     --container-system singularity \
     --container-cache-utilisation amend \

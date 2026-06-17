@@ -50,6 +50,7 @@ export PARTICION_SLURM="cicese"
 #   "its" = hongos (región ITS).
 #   "16s" = procariotas (gen 16S rDNA).
 #   "18s" = eucariotas (gen 18S rDNA).
+# No importan mayúsculas ni minúsculas: "its", "ITS", "18s" o "18S" valen igual.
 # Si lo dejas vacío, el script te preguntará al arrancar (02 y 03).
 # Los parámetros de cada marcador (primers, base de datos, región) están en su
 # propio archivo .yaml. Edítalos ahí, no acá (ver sección 16).

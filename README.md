@@ -40,12 +40,15 @@ metabarcoding_ampliseq/
 │   ├── lanzar_hpc.sh                  ← lanza el job maestro en el HPC (wrapper)
 │   ├── lanzar_hpc.slurm               ← script SLURM del job maestro
 │   ├── precargar_imagenes_docker_hpc.sh ← precarga imágenes Docker en nodo27/28 (HPC)
-│   ├── precargar_imagenes_apptainer_hpc.sh ← precarga imágenes .sif en LUSTRE
+│   ├── precargar_imagenes_apptainer_hpc.sh ← precarga imágenes .sif y bases en referencias/ (apptainer/singularity)
 │   ├── descargar_datos_prueba.sh      ← baja un conjunto pequeño y estándar para probar
 │   └── lib/                           ← funciones comunes (registro, entorno y marcador)
 ├── datos/crudos/                       ← ⬅️ pon aquí tus FASTQ (.fastq.gz)
 ├── metadatos/
 │   └── metadatos.tsv.ejemplo           ← plantilla de metadatos para QIIME2
+├── referencias/                        ← caché de apptainer/singularity (ignorada en git)
+│   ├── imagenes/                       ← imágenes .sif de los contenedores
+│   └── bases/                          ← bases de datos taxonómicas que baja el pipeline
 ├── resultados/<PROYECTO>/              ← resultados, una subcarpeta por proyecto
 └── logs/<PROYECTO>/                    ← logs de cada corrida, también por proyecto
 ```
@@ -80,6 +83,8 @@ En OMICA el internet general está bloqueado, pero los nodos con Docker (nodo5/n
 1. ***Pipeline*** (lo hace el script 00, en el nodo interactivo con internet): `NXF_OFFLINE=false nextflow pull nf-core/ampliseq -r 2.17.0`.
 2. **Imágenes de contenedor** (`MOTOR="docker"`, el predeterminado): recomiendo precargar las imágenes una vez en cada nodo con: `bash scripts/precargar_imagenes_docker_hpc.sh`. Ese paso también deja cacheados los *plugins* de Nextflow que el *job* maestro usará en modo *offline*.
 3. **Bases de datos taxonómicos**: si los nodos no pueden conectarse con los servidores de las bases de datos (UNITE, SILVA, PR2, etc.), descárgalas en `DIR_BASES_HPC` (LUSTRE) y escribe la ruta en el YAML del marcador a los archivos locales (`dada_ref_tax_custom`, etc.). Cada `marcador_*.yaml` trae ya la estructura comentada y el comando para sacar la URL o el archivo exacto del *pipeline*, todo listo solo para que definas las rutas reales.
+
+Si en vez de Docker usas **apptainer** o **singularity**, no necesitas el paso 3 a mano: precarga las imágenes y las bases de una sola vez en el nodo interactivo con `bash scripts/precargar_imagenes_apptainer_hpc.sh`, que las deja ordenadas en `referencias/` (`imagenes/` y `bases/`). El *job* maestro las reutiliza *offline* desde ahí, sin volver a bajarlas. Si los nodos de cómputo no ven la carpeta del proyecto o no puedes escribir en ella, apunta `DIR_REFERENCIAS` (parametros.sh) a una ruta tuya en LUSTRE.
 
 ### b) Marcador genético a analizar
 

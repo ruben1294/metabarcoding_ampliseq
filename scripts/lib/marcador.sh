@@ -32,6 +32,9 @@ seleccionar_marcador() {
         fi
     fi
 
+    # Aceptamos el marcador en mayúsculas o minúsculas (ITS, 18S, etc.), lo normalizamos.
+    MARCADOR="$(printf '%s' "$MARCADOR" | tr '[:upper:]' '[:lower:]')"
+
     case "$MARCADOR" in
         its|16s|18s) : ;;
         *) log_error "MARCADOR no válido: '$MARCADOR' (usa its, 16s o 18s)"; exit 1 ;;
