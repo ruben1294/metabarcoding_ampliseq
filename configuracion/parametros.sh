@@ -93,8 +93,8 @@ DIR_BASES_HPC="/LUSTRE/bioinformatica_data/BD/metagenomica"
 
 
 # 5) Versiones del pipeline original y de Nextflow
-VERSION_PIPELINE="2.17.0"     # versión de nf-core/ampliseq
-VERSION_NEXTFLOW=""           # Nextflow: vacío instala siempre la más reciente. El flujo ampliseq 2.17.0 pide >=25.04.8
+VERSION_PIPELINE="2.18.0"     # versión de nf-core/ampliseq
+VERSION_NEXTFLOW=""           # Nextflow: vacío instala siempre la más reciente. El flujo ampliseq 2.18.0 pide >=25.10.4
 
 
 # 6) Datos de entrada (los FASTQ de secuenciación)

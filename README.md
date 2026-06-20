@@ -13,7 +13,7 @@
 Flujo de trabajo para hacer un análisis de _metabarcoding_ (también conocido como análisis de amplicones) a partir de secuencias amplificadas por PCR y secuenciadas con la plataforma Illumina, con tres
 marcadores genéticos posibles: la región ITS (*Internal Transcribed Spacer*) de hongos, el gen 16S rDNA de procariotas o el gen 18S rDNA de eucariotas.
 
-Usa [nf-core/ampliseq](https://nf-co.re/ampliseq) (v2.17.0), que ejecuta:
+Usa [nf-core/ampliseq](https://nf-co.re/ampliseq) (v2.18.0), que ejecuta:
 control de calidad (FastQC), eliminación de *primers* (cutadapt), inferencia de _Amplicon Sequence Variants_ (ASVs) (DADA2), recorte de la región ITS con ITSx (solo en ITS), inferencia taxonómica y análisis de diversidad (QIIME2), con reportes finales (MultiQC y reporte final).
 
 El objetivo de este _pipeline_ es llamar a nf-core/ampliseq y resolver la instalación de dependencias y la definición de parámetros para que puedas correr tu análisis de manera fluida y sencilla, sin preocuparte por instalar (casi) nada.
@@ -85,7 +85,7 @@ También puedes enviarlo directo con `sbatch scripts/lanzar_hpc.slurm` (el _job_
 
 En OMICA el internet general está bloqueado, pero los nodos con Docker (nodo5/nodo27/nodo28) sí pueden conectarse con el registro de contenedores (`quay.io`) usados en el _pipeline_. El *job* maestro corre en modo *offline* para el *pipeline* (`NXF_OFFLINE=true`, que se define automáticamente en `ENTORNO=hpc` y usa la copia cacheada), y las imágenes de los contenedores a usar se jalan al correr. Para correr el _pipeline_ allí, los pasos son:
 
-1. ***Pipeline*** (lo hace el script 00, en el nodo interactivo con internet): `NXF_OFFLINE=false nextflow pull nf-core/ampliseq -r 2.17.0`.
+1. ***Pipeline*** (lo hace el script 00, en el nodo interactivo con internet): `NXF_OFFLINE=false nextflow pull nf-core/ampliseq -r 2.18.0`.
 2. **Imágenes de contenedor** (`MOTOR="docker"`, el predeterminado): recomiendo precargar las imágenes una vez en cada nodo con: `bash scripts/precargar_imagenes_docker_hpc.sh`. Ese paso también deja cacheados los *plugins* de Nextflow que el *job* maestro usará en modo *offline*.
 3. **Bases de datos taxonómicos**: si los nodos no pueden conectarse con los servidores de las bases de datos (UNITE, SILVA, PR2, etc.), descárgalas en `DIR_BASES_HPC` (LUSTRE) y escribe la ruta en el YAML del marcador a los archivos locales (`dada_ref_tax_custom`, etc.). Cada `marcador_*.yaml` trae ya la estructura comentada y el comando para sacar la URL o el archivo exacto del *pipeline*, todo listo solo para que definas las rutas reales.
 
