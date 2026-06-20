@@ -1,7 +1,7 @@
 <p align="center">
   <img src="imagenes/cicese.png" alt="CICESE" height="90">
   &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="imagenes/logo_lab_metagenomica.svg" alt="Laboratorio de Metagenómica" height="140">
+  <img src="imagenes/logo_lab_metagenomica.svg" alt="Laboratorio de Metagenómica" height="145">
 
 </p>
 
