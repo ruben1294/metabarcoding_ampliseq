@@ -7,7 +7,13 @@
 #  necesita, leyendo los archivos FASTQ de la carpeta CARPETA_FASTQ.
 #
 #  Formato generado (TSV, según la especificación de nf-core/ampliseq):
-#     sample  <tab>  fastq_1  <tab>  fastq_2
+#     sample  <tab>  fastq_1  <tab>  fastq_2  <tab>  run
+#
+#  La columna run es la corrida de secuenciación de cada muestra: ampliseq separa el
+#  modelo de error de DADA2 por corrida (mezclarlas lo degrada). Su valor es el nombre
+#  de la subcarpeta inmediata dentro de CARPETA_FASTQ (una subcarpeta por corrida), o
+#  "1" si los FASTQ están sueltos en CARPETA_FASTQ (una sola corrida, el caso por
+#  defecto). Si lo prefieres, edita la columna run a mano después de generar la hoja.
 #
 #  Reconoce los nombres típicos de Illumina, p. ej.:
 #     MUESTRA_S1_L001_R1_001.fastq.gz  /  MUESTRA_S1_L001_R2_001.fastq.gz
@@ -103,15 +109,31 @@ derivar_nombre() {
     printf '%s' "$base"
 }
 
-# Encabezado del TSV
+# Función: deriva la corrida (run) de un FASTQ. Es el nombre de la subcarpeta inmediata
+# dentro de CARPETA_FASTQ (una subcarpeta por corrida), o "1" si el archivo está suelto
+# en CARPETA_FASTQ. ampliseq exige que run no tenga espacios (los pasamos a "_").
+derivar_run() {
+    local dir nom
+    dir="$(dirname "$1")"
+    if [ "$dir" = "${CARPETA_FASTQ%/}" ]; then
+        printf '1'
+    else
+        nom="$(basename "$dir")"
+        printf '%s' "$nom" | tr -c 'A-Za-z0-9_' '_'
+    fi
+}
+
+# Encabezado del TSV (la columna run va al final, ver derivar_run)
 if [ "$DISENO_LECTURAS" = "single" ]; then
-    printf 'sample\tfastq_1\n' > "$SAMPLESHEET"
+    printf 'sample\tfastq_1\trun\n' > "$SAMPLESHEET"
 else
-    printf 'sample\tfastq_1\tfastq_2\n' > "$SAMPLESHEET"
+    printf 'sample\tfastq_1\tfastq_2\trun\n' > "$SAMPLESHEET"
 fi
 
-# Reunir todos los R1 (varios patrones de nombre posibles)
-mapfile -t R1S < <(find "$CARPETA_FASTQ" -maxdepth 1 -type f \
+# Reunir todos los R1 (varios patrones de nombre posibles). maxdepth 2: además de los
+# FASTQ sueltos en CARPETA_FASTQ (run "1"), recoge los que estén un nivel adentro, en
+# una subcarpeta por corrida de secuenciación (run = nombre de la subcarpeta).
+mapfile -t R1S < <(find "$CARPETA_FASTQ" -maxdepth 2 -type f \
     \( -name "*_R1_001.fastq.gz" -o -name "*_R1.fastq.gz" -o -name "*_1.fastq.gz" \) \
     | sort)
 
@@ -125,9 +147,10 @@ N=0
 for r1 in "${R1S[@]}"; do
     nombre="$(derivar_nombre "$(basename "$r1")")"
     r1_abs="$(readlink -f "$r1")"
+    run="$(derivar_run "$r1")"
 
     if [ "$DISENO_LECTURAS" = "single" ]; then
-        printf '%s\t%s\n' "$nombre" "$r1_abs" >> "$SAMPLESHEET"
+        printf '%s\t%s\t%s\n' "$nombre" "$r1_abs" "$run" >> "$SAMPLESHEET"
         N=$((N+1))
         continue
     fi
@@ -153,7 +176,7 @@ for r1 in "${R1S[@]}"; do
         log_warn "No encontré R2 para: $(basename "$r1")  → muestra OMITIDA"
         continue
     fi
-    printf '%s\t%s\t%s\n' "$nombre" "$r1_abs" "$(readlink -f "$r2")" >> "$SAMPLESHEET"
+    printf '%s\t%s\t%s\t%s\n' "$nombre" "$r1_abs" "$(readlink -f "$r2")" "$run" >> "$SAMPLESHEET"
     N=$((N+1))
 done
 
@@ -169,6 +192,16 @@ fi
 
 log_info "Hoja de muestras creada: $SAMPLESHEET"
 log_info "Muestras escritas: $N"
+
+# Corridas (run) detectadas. La columna run es el último campo en ambos diseños.
+runs_distintos="$(tail -n +2 "$SAMPLESHEET" | awk -F'\t' 'NF{print $NF}' | sort -u | paste -sd' ' -)"
+n_runs="$(printf '%s' "$runs_distintos" | wc -w)"
+if [ "$n_runs" -le 1 ]; then
+    log_info "Corrida (run): una sola ($runs_distintos)."
+else
+    log_info "Corridas (run) detectadas ($n_runs): $runs_distintos"
+    log_info "  ampliseq separará el modelo de error de DADA2 por corrida."
+fi
 log_info "  ---- Vista previa ----"
 head -n 6 "$SAMPLESHEET" | column -t -s $'\t'
 log_info "  ----------------------"

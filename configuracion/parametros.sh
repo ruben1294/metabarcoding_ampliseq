@@ -63,8 +63,10 @@ MARCADOR="16s"
 #   "docker"      = contenedores Docker (local con integración WSL, en HPC corre
 #                   en los nodos de cómputo con Docker).
 #   "singularity" = contenedores Singularity (alternativa en HPC). Usa referencias/ como apptainer.
-#   "apptainer"   = sucesor de Singularity. Recomendado en un HPC sin internet: las imágenes
-#                   .sif y las bases se precargan una vez y se reutilizan desde referencias/.
+#   "apptainer"   = sucesor de Singularity. Las imágenes .sif y las bases se precargan una vez
+#                   y se reutilizan desde referencias/. OJO: apptainer y singularity necesitan
+#                   que el HPC tenga apptainer setuid o user namespaces habilitados en el kernel.
+#                   OMICA hoy no los tiene, así que ahí usa "docker" (ver README, "HPC de OMICA").
 #   "conda"       = un entorno conda por herramienta, sin contenedor (más lento).
 MOTOR="auto"
 
@@ -96,7 +98,10 @@ VERSION_NEXTFLOW=""           # Nextflow: vacío instala siempre la más recient
 
 
 # 6) Datos de entrada (los FASTQ de secuenciación)
-# Carpeta con los FASTQ crudos (.fastq.gz).
+# Carpeta con los FASTQ crudos (.fastq.gz). Si tus muestras vienen de varias corridas de
+# secuenciación, ponlas en una subcarpeta por corrida (datos/crudos/corrida1/, corrida2/…):
+# el script 01 llena la columna run con el nombre de la subcarpeta y ampliseq separa el
+# modelo de error de DADA2 por corrida. Sueltas aquí = una sola corrida (run "1").
 CARPETA_FASTQ="datos/crudos"
 
 # Diseño de las lecturas:
@@ -288,6 +293,7 @@ CONFIG_18S="configuracion/marcador_18s.yaml"
 # Banderas adicionales de nf-core/ampliseq tal cual, se pasan por CLI y mandan sobre
 # el params-file. Si algo ya tiene su variable arriba, edita la variable, no esto.
 #   "--pacbio"                    → lecturas PacBio en vez de Illumina
-#   "--multiple_sequencing_runs"  → la entrada tiene varias corridas de secuenciación
+#   "--multiple_sequencing_runs"  → varias corridas SOLO con entrada por carpeta (USAR_SAMPLESHEET="no").
+#                                   Con hoja de muestras no hace falta: usa la columna run (subcarpetas, sección 6).
 #   "--picrust"                   → predicción funcional con PICRUSt2
 EXTRA_PARAMS=""

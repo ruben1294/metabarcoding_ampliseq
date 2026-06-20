@@ -86,6 +86,8 @@ En OMICA el internet general está bloqueado, pero los nodos con Docker (nodo5/n
 
 Si en vez de Docker usas **apptainer** o **singularity**, no necesitas el paso 3 a mano: precarga las imágenes y las bases de una sola vez en el nodo interactivo con `bash scripts/precargar_imagenes_apptainer_hpc.sh`, que las deja ordenadas en `referencias/` (`imagenes/` y `bases/`). El *job* maestro las reutiliza *offline* desde ahí, sin volver a bajarlas. Si los nodos de cómputo no ven la carpeta del proyecto o no puedes escribir en ella, apunta `DIR_REFERENCIAS` (parametros.sh) a una ruta tuya en LUSTRE.
 
+> **Limitación conocida en OMICA:** a la fecha, apptainer y singularity no funcionan en los nodos de cómputo de OMICA. El apptainer sin privilegios (el que se instala por conda) necesita *user namespaces* del kernel, y OMICA los tiene deshabilitados (`user.max_user_namespaces = 0`), sin un apptainer *setuid* del sistema como alternativa. El error que verás es `Failed to create user namespace: user namespace disabled`. Para usarlos haría falta que la administración del HPC instale apptainer *setuid* o suba `user.max_user_namespaces`. Mientras tanto, en OMICA usa `MOTOR="docker"` (nodo5/nodo27/nodo28), que es el camino probado. Los scripts y la precarga de apptainer ya están listos para cuando el clúster lo permita, no hace falta cambiar nada más.
+
 ### b) Marcador genético a analizar
 
 - **`its`**: hongos. Región ITS, base de datos predeterminada UNITE. Parámetros en
@@ -153,6 +155,22 @@ bash scripts/03_ejecutar_ampliseq.sh
 ```
 
 La primera corrida baja la base de datos de referencia para la inferencia taxonómica, que se guarda en la caché.
+
+### 3.2 Varias corridas de secuenciación (columna `run`)
+
+DADA2 aprende el perfil de error de cada corrida de secuenciación por separado, y mezclar corridas en un mismo modelo degrada los ASVs. La hoja de muestras lleva una columna `run` para indicarlo, y el script 01 la llena sola: pon los FASTQ de cada corrida en su propia subcarpeta dentro de `datos/crudos/` y `run` toma el nombre de la subcarpeta.
+
+```
+datos/crudos/
+├── corrida1/   ← run = corrida1
+│   ├── M1_R1.fastq.gz
+│   └── M1_R2.fastq.gz
+└── corrida2/   ← run = corrida2
+    ├── M2_R1.fastq.gz
+    └── M2_R2.fastq.gz
+```
+
+Si dejas los FASTQ sueltos en `datos/crudos/` (el caso por defecto), todos quedan en la corrida `1`, igual que antes. También puedes editar la columna `run` a mano después de generar la hoja. Con hoja de muestras no se usa `--multiple_sequencing_runs`: esa bandera es solo para la entrada por carpeta (`USAR_SAMPLESHEET="no"`).
 
 ---
 

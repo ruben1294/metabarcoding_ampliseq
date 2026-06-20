@@ -1,0 +1,85 @@
+name: tests
+
+# Pruebas de comportamiento de la lógica del repo (no solo sintaxis). Dos trabajos:
+#   bats          -> pruebas unitarias de las funciones frágiles (parser de YAML,
+#                    derivación del nombre de muestra).
+#   params-schema -> genera el params-file como lo hace el script 03 (--dry-run) y
+#                    comprueba que cada clave exista en el nextflow_schema.json real de
+#                    ampliseq. Atrapa un emitir_* con la llave mal escrita, que
+#                    shellcheck y 'nextflow config' no pueden ver.
+on:
+  push:
+    paths:
+      - 'scripts/**'
+      - 'configuracion/**'
+      - 'tests/**'
+      - '.github/workflows/tests.yml'
+  pull_request:
+    paths:
+      - 'scripts/**'
+      - 'configuracion/**'
+      - 'tests/**'
+
+jobs:
+  bats:
+    name: Pruebas unitarias (bats)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar bats
+        run: sudo apt-get update && sudo apt-get install -y bats
+
+      - name: Correr las pruebas
+        run: bats tests/
+
+  params-schema:
+    name: params-file contra el esquema de ampliseq
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # FASTQ vacíos de prueba: el script 01 solo lee los NOMBRES (no el contenido)
+      # para armar la hoja de muestras, así que 'touch' basta y evita bajar datos.
+      # muestraC va en una subcarpeta para ejercitar la columna run (multi-corrida).
+      - name: Crear FASTQ de prueba (pareados, una en subcarpeta)
+        run: |
+          mkdir -p datos/crudos/corrida2
+          touch datos/crudos/muestraA_S1_L001_R1_001.fastq.gz \
+                datos/crudos/muestraA_S1_L001_R2_001.fastq.gz \
+                datos/crudos/muestraB_S2_L001_R1_001.fastq.gz \
+                datos/crudos/muestraB_S2_L001_R2_001.fastq.gz \
+                datos/crudos/corrida2/muestraC_S3_L001_R1_001.fastq.gz \
+                datos/crudos/corrida2/muestraC_S3_L001_R2_001.fastq.gz
+
+      - name: Generar la hoja de muestras y comprobar la columna run
+        run: |
+          bash scripts/01_generar_samplesheet.sh
+          # El encabezado debe terminar en la columna run
+          head -1 configuracion/samplesheet.tsv | grep -qE $'\trun$'
+          # La subcarpeta corrida2 debe dar dos corridas distintas (1 y corrida2)
+          n_runs="$(tail -n +2 configuracion/samplesheet.tsv | awk -F'\t' '{print $NF}' | sort -u | wc -l)"
+          test "$n_runs" -eq 2
+          echo "Columna run OK: $n_runs corridas detectadas."
+
+      # Bajamos el esquema en la MISMA versión del pipeline que fija parametros.sh,
+      # para validar contra el contrato real de esa versión.
+      - name: Bajar el nextflow_schema.json de ampliseq
+        run: |
+          source configuracion/parametros.sh
+          url="https://raw.githubusercontent.com/nf-core/ampliseq/${VERSION_PIPELINE}/nextflow_schema.json"
+          echo "Esquema: $url"
+          curl -fsSL "$url" -o /tmp/nextflow_schema.json
+
+      # Generamos el params-file de cada marcador con --dry-run (no corre Nextflow ni
+      # Docker, solo arma el YAML) y validamos todas sus claves contra el esquema.
+      - name: Generar params-files y validarlos
+        run: |
+          gen=()
+          for combo in "16s:paired" "its:single" "18s:paired"; do
+            m="${combo%%:*}"; d="${combo##*:}"
+            bash scripts/03_ejecutar_ampliseq.sh --dry-run -y -m "$m" -d "$d" --proyecto "ci_$m"
+            f="$(ls resultados/ci_$m/params_usados_*.yaml | head -1)"
+            gen+=("$f")
+          done
+          python3 tests/validar_params_contra_schema.py /tmp/nextflow_schema.json "${gen[@]}"
