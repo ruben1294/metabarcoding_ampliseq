@@ -1,15 +1,20 @@
-# _Metabarcoding_ (ITS de hongos / 16S de procariotas / 18S de eucariotas) con nf-core/ampliseq
+<p align="center">
+  <img src="imagenes/cicese.png" alt="CICESE" height="90">
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="imagenes/logo_lab_metagenomica.svg" alt="Laboratorio de Metagenómica" height="140">
 
-[![shellcheck](https://github.com/ruben1294/metabarcoding_ampliseq/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/ruben1294/metabarcoding_ampliseq/actions/workflows/shellcheck.yml) [![nextflow-config](https://github.com/ruben1294/metabarcoding_ampliseq/actions/workflows/nextflow-config.yml/badge.svg)](https://github.com/ruben1294/metabarcoding_ampliseq/actions/workflows/nextflow-config.yml) [![DOI](https://zenodo.org/badge/1266027343.svg)](https://doi.org/10.5281/zenodo.20711275)
+</p>
+
+# _Metabarcoding_ con nf-core/ampliseq
+
+[![shellcheck](https://github.com/ruben1294/metabarcoding_ampliseq/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/ruben1294/metabarcoding_ampliseq/actions/workflows/shellcheck.yml) [![nextflow-config](https://github.com/ruben1294/metabarcoding_ampliseq/actions/workflows/nextflow-config.yml/badge.svg)](https://github.com/ruben1294/metabarcoding_ampliseq/actions/workflows/nextflow-config.yml) [![tests](https://github.com/ruben1294/metabarcoding_ampliseq/actions/workflows/tests.yml/badge.svg)](https://github.com/ruben1294/metabarcoding_ampliseq/actions/workflows/tests.yml)
+ [![DOI](https://zenodo.org/badge/1266027343.svg)](https://doi.org/10.5281/zenodo.20711275)
 
 Flujo de trabajo para hacer un análisis de _metabarcoding_ (también conocido como análisis de amplicones) a partir de secuencias amplificadas por PCR y secuenciadas con la plataforma Illumina, con tres
 marcadores genéticos posibles: la región ITS (*Internal Transcribed Spacer*) de hongos, el gen 16S rDNA de procariotas o el gen 18S rDNA de eucariotas.
 
 Usa [nf-core/ampliseq](https://nf-co.re/ampliseq) (v2.17.0), que ejecuta:
-control de calidad (FastQC), eliminación de *primers* (cutadapt), inferencia de
-_Amplicon Sequence Variants_ (ASVs) (DADA2), recorte de la región ITS con ITSx (solo en
-ITS), inferencia taxonómica y
-análisis de diversidad (QIIME2), con reportes finales (MultiQC y reporte resumen).
+control de calidad (FastQC), eliminación de *primers* (cutadapt), inferencia de _Amplicon Sequence Variants_ (ASVs) (DADA2), recorte de la región ITS con ITSx (solo en ITS), inferencia taxonómica y análisis de diversidad (QIIME2), con reportes finales (MultiQC y reporte final).
 
 El objetivo de este _pipeline_ es llamar a nf-core/ampliseq y resolver la instalación de dependencias y la definición de parámetros para que puedas correr tu análisis de manera fluida y sencilla, sin preocuparte por instalar (casi) nada.
 
@@ -251,7 +256,7 @@ Dentro de `resultados/<PROYECTO>/` encontrarás (entre otros):
 
 ### 7.1 Este repositorio
 
-Si este repo te ayudó, te agradecería una estrellita ⭐ y una cita:
+Este _pipeline_ es una contribución del Laboratorio de Metagenómica, del CICESE. Si este repo te ayudó, te agradecería una estrella ⭐ y una cita:
 
 Castañeda-Martínez, R. (2026). *metabarcoding ampliseq: uso de nf-core/ampliseq para realizar metabarcoding* (v0.1.1) [Software]. Zenodo. https://doi.org/10.5281/zenodo.20711275
 
