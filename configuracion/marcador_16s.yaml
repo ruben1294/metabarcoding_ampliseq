@@ -16,12 +16,12 @@ RV_primer: "GGACTACNVGGGTWTCTAAT"
 dada_ref_taxonomy: "silva=138"
 
 # --- HPC sin internet (offline) ---
-# La clave de arriba (silva=138) DESCARGA la base al correr; offline eso falla.
+# La clave de arriba (silva=138) descarga la base al correr. Si lo corres offline, falla.
 # Precarga la base en LUSTRE (DIR_BASES_HPC) en el nodo interactivo, comenta la línea
-# de arriba y apunta a los archivos locales (formato DADA2 assignTaxonomy + especie):
+# de arriba y pon la ruta a los archivos locales (en formato DADA2 assignTaxonomy y especie):
 #dada_ref_tax_custom: "/LUSTRE/bioinformatica_data/BD/metagenomica/SILVA/silva_nr99_v138_train_set.fa.gz"
 #dada_ref_tax_custom_sp: "/LUSTRE/bioinformatica_data/BD/metagenomica/SILVA/silva_species_assignment_v138.fa.gz"
-# El nombre/URL EXACTO que usa esta versión del pipeline lo sacas con:
+# El nombre o URL exacto que usa esta versión del pipeline lo sacas con:
 #   grep -iA4 'silva' ~/.nextflow/assets/.repos/nf-core/ampliseq/conf/ref_databases.config
 
 # --- Clasificación alternativa / avanzada (opcional) ---
@@ -30,8 +30,7 @@ dada_ref_taxonomy: "silva=138"
 #classifier: "/ruta/al/clasificador.qza"
 
 # Colocación filogenética de ASVs con EPA-ng: los clasifica colocándolos en un árbol
-# de referencia que tú aportas (específico del marcador). Las cinco claves se activan
-# juntas; descoméntalas y ajústalas para usarlo.
+# de referencia que tú aportas (específico del marcador). Si quieres usar esta función, descoméntalas y ajústalas.
 #pplace_tree: "/ruta/arbol_referencia.nwk"          # árbol de referencia (newick). --pplace_tree
 #pplace_aln: "/ruta/secuencias_referencia.fasta"    # secuencias de referencia. --pplace_aln
 #pplace_model: "GTR+I+F"                            # modelo evolutivo (ej. LG+F, GTR+I+F). --pplace_model

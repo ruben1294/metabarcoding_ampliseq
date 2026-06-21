@@ -1,6 +1,6 @@
 name: shellcheck
 
-# Lint estático de los scripts bash del repo. Corre en cada push/PR que toque
+# Lint estático de los scripts bash del repo. Corre en cada push y pull request que toque
 # scripts o la configuración bash. El umbral y las reglas las gobierna .shellcheckrc.
 on:
   push:

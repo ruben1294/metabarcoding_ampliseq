@@ -29,24 +29,23 @@ RV_primer: "TGATCCTTCTGCAGGTTCACCTAC"
 #         recomendada para 18S de protistas.
 #   silva (qiime_ref_taxonomy): la SILVA preformateada de QIIME2 es la combinada
 #         16S/18S y sí sirve para eucariotas, pero a través de QIIME2.
-# Ojo: la SILVA de DADA2 no sirve para 18S. La documentación de ampliseq la marca
-# como optimizada para Bacteria y Archaea. Por eso, si usas SILVA, aquí va a través
+# Ojo: la SILVA de DADA2 no sirve para 18S, ya que solo trae secuencias de 16S. Por eso, si usas SILVA, aquí va a través
 # de qiime_ref_taxonomy y no por dada_ref_taxonomy.
 
-# PR2 por DADA2
+# PR2 a través de DADA2
 dada_ref_taxonomy: "pr2=5.1.0"
 
-# SILVA 16S/18S por QIIME2. Comenta la línea de arriba y descomenta esta:
+# SILVA 16S/18S a través de QIIME2. Comenta la línea de arriba y descomenta esta:
 #qiime_ref_taxonomy: "silva=138"
 
 # --- HPC sin internet (offline) ---
-# Las claves de arriba DESCARGAN la base al correr; offline eso falla. Precarga la
-# base en LUSTRE (DIR_BASES_HPC) en el nodo interactivo y apunta a archivos locales.
+# Las claves de arriba descargan la base al correr. Si lo corres offline, falla. Precarga la
+# base en LUSTRE (DIR_BASES_HPC) en el nodo interactivo y pon la ruta a los archivos locales.
 # Por DADA2 (PR2, formato assignTaxonomy):
 #dada_ref_tax_custom: "/LUSTRE/bioinformatica_data/BD/metagenomica/PR2/pr2_version_5.1.0_SSU_dada2.fasta.gz"
 # O por QIIME2 (SILVA preformateada de QIIME2, clasificador entrenado):
 #qiime_ref_tax_custom: "/LUSTRE/bioinformatica_data/BD/metagenomica/SILVA/silva-138-99-nb-classifier.qza"
-# El nombre/URL EXACTO que usa esta versión del pipeline lo sacas con:
+# El nombre o URL exacto que usa esta versión del pipeline lo sacas con:
 #   grep -iA4 'pr2\|silva' ~/.nextflow/assets/.repos/nf-core/ampliseq/conf/ref_databases.config
 
 # --- Clasificación alternativa / avanzada (opcional) ---
@@ -55,8 +54,7 @@ dada_ref_taxonomy: "pr2=5.1.0"
 #classifier: "/ruta/al/clasificador.qza"
 
 # Colocación filogenética de ASVs con EPA-ng: los clasifica colocándolos en un árbol
-# de referencia que tú aportas (específico del marcador). Las cinco claves se activan
-# juntas; descoméntalas y ajústalas para usarlo.
+# de referencia que tú aportas (específico del marcador). Si quieres usar esta función, descoméntalas y ajústalas.
 #pplace_tree: "/ruta/arbol_referencia.nwk"          # árbol de referencia (newick). --pplace_tree
 #pplace_aln: "/ruta/secuencias_referencia.fasta"    # secuencias de referencia. --pplace_aln
 #pplace_model: "GTR+I+F"                            # modelo evolutivo (ej. LG+F, GTR+I+F). --pplace_model

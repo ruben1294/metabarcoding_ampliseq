@@ -18,7 +18,7 @@ DIR_PROYECTO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$DIR_PROYECTO"
 source "configuracion/parametros.sh"
 
-# Nodos permitidos para el maestro (orden de preferencia), cuenta y partición de SLURM
+# Nodos permitidos para el job maestro (orden de preferencia), cuenta y partición de SLURM
 # (vienen de parametros.sh, el valor después de ':-' es el respaldo de OMICA).
 read -ra NODOS <<< "${NODOS_MAESTRO:-nodo5 nodo27 nodo28}"
 CUENTA="${CUENTA_SLURM:-metagenomica}"
@@ -32,7 +32,7 @@ estado_nodo() { sinfo -h -p "$PARTICION" -n "$1" -o "%t" 2>/dev/null | head -1; 
 # CPUs libres del nodo (campo 'I' de A/I/O/T). Vacío si no aparece.
 cpus_libres() { sinfo -h -p "$PARTICION" -n "$1" -o "%C" 2>/dev/null | head -1 | cut -d/ -f2; }
 
-# 1) Primer nodo con hueco (idle o mix)
+# 1) Primer nodo con espacio (idle o mix)
 elegido=""
 for nodo in "${NODOS[@]}"; do
     estado="$(estado_nodo "$nodo")"
@@ -43,7 +43,7 @@ for nodo in "${NODOS[@]}"; do
     fi
 done
 
-# 2) Si ninguno tiene hueco, el de más CPUs libres (el job maestro se calendarizará allí)
+# 2) Si ninguno tiene espacio, el de más CPUs libres (el job maestro se calendarizará allí)
 if [ -z "$elegido" ]; then
     mejor=-1
     for nodo in "${NODOS[@]}"; do

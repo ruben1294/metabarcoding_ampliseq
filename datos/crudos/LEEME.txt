@@ -1,7 +1,7 @@
 COLOCA AQUÍ TUS ARCHIVOS FASTQ CRUDOS (.fastq.gz)
 ==================================================
 
-- Un par de archivos por muestra (lecturas pareadas R1 y R2), por ejemplo:
+- Para lecturas pareadas (R1 y R2), un par de archivos por muestra, por ejemplo:
     MUESTRA1_S1_L001_R1_001.fastq.gz
     MUESTRA1_S1_L001_R2_001.fastq.gz
 

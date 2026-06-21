@@ -6,7 +6,6 @@
 #  Funciones de registro (logging) comunes a todos los scripts. Cada línea lleva
 #  marca de tiempo y nivel:  [YYYY-MM-DD HH:MM:SS] [NIVEL] mensaje
 #  INFO/WARN/DEBUG van a stdout (archivo .out) y ERROR a stderr (archivo .err).
-#  En la terminal cada nivel sale con color; los archivos quedan en texto plano.
 #
 #  Uso típico, al inicio del script y después de cargar parametros.sh:
 #       source "scripts/lib/registro.sh"
@@ -46,8 +45,7 @@ _configurar_colores
 # en el primero. Ojo: un log_error dentro de un subshell no actualiza este contador.
 LOG_ERRORES=0
 
-# Se usa printf con %s para el mensaje, de modo que un '%' en el texto no se
-# interprete. El color envuelve la línea y se resetea al final.
+# Se usa printf con %s para el mensaje
 log_info()  { printf '%s[%s] [INFO] %s%s\n'  "$C_INFO"  "$(date '+%Y-%m-%d %H:%M:%S')" "$*" "$C_RESET"; }
 log_warn()  { printf '%s[%s] [WARN] %s%s\n'  "$C_WARN"  "$(date '+%Y-%m-%d %H:%M:%S')" "$*" "$C_RESET"; }
 log_error() { LOG_ERRORES=$((LOG_ERRORES + 1)); printf '%s[%s] [ERROR] %s%s\n' "$C_ERROR" "$(date '+%Y-%m-%d %H:%M:%S')" "$*" "$C_RESET" >&2; }
@@ -73,8 +71,7 @@ iniciar_registro() {
     # Decidir el color con la terminal real, antes de redirigir la salida.
     _configurar_colores
 
-    # La terminal ve color; un filtro sed quita los códigos ANSI en la rama que
-    # escribe a disco, para que los archivos queden limpios.
+    # Quitamos los códigos ANSI para que los archivos queden limpios.
     local quita_ansi='s/\x1b\[[0-9;]*[A-Za-z]//g'
     exec > >(tee >(sed -u "$quita_ansi" >> "$LOG_OUT")) \
         2> >(tee >(sed -u "$quita_ansi" >> "$LOG_ERR") >&2)

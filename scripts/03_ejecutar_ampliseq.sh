@@ -58,7 +58,7 @@ Ejemplos:
 AYUDA
 }
 
-# Opciones de línea de comandos. Las sobreescrituras se aplican solo a esta corrida;
+# Opciones de línea de comandos. Las sobreescrituras se aplican solo a esta corrida,
 # parametros.sh no se toca. Capturamos los overrides antes de abrir el log porque
 # --proyecto cambia la carpeta de logs (DIR_LOGS).
 DRY_RUN="no"; ASUMIR_SI="no"
@@ -139,10 +139,10 @@ mkdir -p "$NXF_CONDA_CACHEDIR" "$DIR_LOGS" "$SALIDA"
 
 # La caché de imágenes (referencias/imagenes con apptainer o singularity) puede estar en una
 # ruta compartida. Si no tiene permiso de escritura, avisamos claro en lugar del crudo
-# "Permission denied" del mkdir, y damos las dos salidas.
+# "Permission denied" del mkdir, y damos las dos opciones.
 if ! mkdir -p "$NXF_SINGULARITY_CACHEDIR" 2>/dev/null; then
     log_error "No puedo crear la caché de imágenes: $NXF_SINGULARITY_CACHEDIR"
-    log_error "  Te falta permiso de escritura ahí. Salidas:"
+    log_error "  Te falta permiso de escritura ahí. Para resolver, hay dos opciones:"
     log_error "    1) Apunta DIR_REFERENCIAS (parametros.sh) a una carpeta tuya con escritura (en HPC, LUSTRE)."
     log_error "    2) Usa MOTOR=docker: en OMICA no necesita esta caché (las imágenes se jalan en nodo27/28)."
     exit 1
@@ -152,7 +152,7 @@ fi
 # (ref_taxonomy_storage).
 if { [ "$MOTOR" = "apptainer" ] || [ "$MOTOR" = "singularity" ]; } && ! mkdir -p "$DIR_BASES_REF" 2>/dev/null; then
     log_error "No puedo crear la carpeta de bases: $DIR_BASES_REF"
-    log_error "  Te falta permiso de escritura ahí. Apunta DIR_REFERENCIAS (parametros.sh) a una"
+    log_error "  Te falta permiso de escritura ahí. Modifica DIR_REFERENCIAS (parametros.sh) para que dirija a una"
     log_error "  carpeta tuya con escritura (en HPC, una ruta compartida en LUSTRE)."
     exit 1
 fi
@@ -178,7 +178,7 @@ if [ "$DRY_RUN" != "si" ]; then
             || { log_error "ENTORNO=hpc pero no encontré 'sbatch'. Lanza desde un nodo del clúster (p. ej. nodo5)."; exit 1; }
         case "$MOTOR" in
             docker)
-                log_info "Docker corre en los nodos de cómputo (nodo27, nodo28); el maestro solo orquesta." ;;
+                log_info "Docker corre en los nodos de cómputo (nodo27, nodo28), el job maestro solo orquesta." ;;
             singularity|apptainer)
                 command -v apptainer >/dev/null 2>&1 || command -v singularity >/dev/null 2>&1 \
                     || log_warn "MOTOR=$MOTOR: no veo Singularity/Apptainer en el maestro. Si Nextflow no puede preparar las imágenes, cárgalo con 'module load'." ;;
@@ -201,8 +201,8 @@ if [ "$DRY_RUN" != "si" ]; then
         esac
     fi
 
-    # En HPC el maestro puede caer en un nodo de cómputo (nodo27/nodo28) sin salida a
-    # internet, así que corremos Nextflow offline y usamos el pipeline ya descargado en
+    # En HPC el maestro puede caer en un nodo de cómputo (nodo27/nodo28), que generalmente no
+    # tienen acceso a internet, así que corremos Nextflow offline y usamos el pipeline ya descargado en
     # la caché. Ese precargado lo hace el script 00 en el nodo interactivo (el único con
     # internet). Sin esto Nextflow intenta bajarlo y falla con "Unknown project".
     if [ "$ENTORNO" = "hpc" ]; then
@@ -284,9 +284,8 @@ else
 fi
 
 # 4) Preparamos el params-file de la corrida: copia del YAML del marcador y los
-#    parámetros de parametros.sh. Todo va por el params-file (no por CLI) para que
-#    nf-schema reciba el tipo correcto (booleano de verdad, número sin comillas y
-#    cadena entre comillas) y para que el YAML quede como evidencia completa de la
+#    parámetros de parametros.sh. Pasamos todo a través de params-file para que
+#    nf-schema reciba el tipo correcto y para que el YAML quede como evidencia completa de la
 #    corrida.
 # Helpers: vuelcan la variable solo si tiene valor, con el formato YAML que toca.
 emitir_bool() { if [ "${2:-no}" = "si" ]; then echo "$1: true"; fi; }    # toggle si/no → 'clave: true'

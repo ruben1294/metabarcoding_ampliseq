@@ -242,7 +242,7 @@ echo
 cat "$TXT"
 echo
 log_info "tiempo_total y tiempo_prom usan el 'realtime' de Nextflow (cómputo real de la tarea)."
-log_info "El TOTAL es la suma de tiempos de tarea; el reloj de pared real es menor por el paralelismo."
+log_info "El TOTAL es la suma de tiempos de tarea."
 log_info "Tabla (tabs): $TSV"
 log_info "Tabla (texto): $TXT"
 log_info "Reportes visuales de la misma corrida en: $DIR_INFO/ (timeline y report .html)"

@@ -16,19 +16,18 @@ import json
 import re
 import sys
 
-# ponytail: el params-file es YAML plano (clave: valor por línea), así que sacamos las
-# claves con una regex en vez de depender de pyyaml. Si algún día se anidan claves, hay
+# Si algún día se anidan claves, hay
 # que pasar a un parser de YAML de verdad.
 LINEA_CLAVE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\s*:")
 
 
 def claves_validas(ruta_schema):
-    """Nombres de parámetro declarados en el esquema (bajo $defs.*.properties)."""
+    """Nombres de parámetro declarados en el schema (usando $defs.*.properties)."""
     with open(ruta_schema) as fh:
         esquema = json.load(fh)
     claves = set()
-    # ampliseq agrupa los parámetros en $defs; algunos esquemas también traen
-    # 'properties' en la raíz, así que cubrimos ambos.
+    # ampliseq agrupa los parámetros en $defs, pero algunos esquemas también traen
+    # 'properties' en la raíz.
     for grupo in esquema.get("$defs", {}).values():
         claves.update(grupo.get("properties", {}).keys())
     claves.update(esquema.get("properties", {}).keys())

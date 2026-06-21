@@ -14,7 +14,7 @@ set -uo pipefail
 
 DIR_PROYECTO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # Si no podemos entrar al proyecto, nada más funciona (no se leerían parametros.sh
-# ni las libs): es el único punto donde el verificador sí aborta de inmediato.
+# ni las libs).
 cd "$DIR_PROYECTO" || { echo "ERROR: no pude entrar al directorio del proyecto: $DIR_PROYECTO" >&2; exit 1; }
 source "configuracion/parametros.sh"
 

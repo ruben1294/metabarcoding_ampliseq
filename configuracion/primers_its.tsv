@@ -1,5 +1,5 @@
 # Catálogo de primers ITS estándar para metabarcoding de hongos
-# (referencia; copia las secuencias que uses a configuracion/marcador_its.yaml)
+# (solo como referencia, copia las secuencias que uses a configuracion/marcador_its.yaml)
 #
 # preset	region	primer_FW	secuencia_FW	primer_RV	secuencia_RV	referencia
 ITS1F-ITS2	its1	ITS1F	CTTGGTCATTTAGAGGAAGTAA	ITS2	GCTGCGTTCTTCATCGATGC	Gardes&Bruns1993 / White1990

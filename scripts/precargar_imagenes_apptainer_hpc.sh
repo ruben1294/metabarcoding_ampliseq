@@ -7,7 +7,7 @@
 #  offline: las imágenes de contenedor (.sif) en referencias/imagenes y las bases taxonómicas
 #  del marcador en referencias/bases (ver DIR_REFERENCIAS en parametros.sh).
 #
-#  Córrelo UNA vez en el nodo interactivo (el único con salida a internet). Las imágenes las
+#  Córrelo UNA vez en el nodo interactivo (normalmente el único con salida a internet). Las imágenes las
 #  baja 'nf-core (pipelines) download' (modo 'amend'). Las bases las baja con wget desde las mismas URL
 #  que usa el pipeline, con su nombre original, para que la corrida offline las reutilice
 #  (storeDir de ampliseq). Luego el script 03 corre offline leyendo de referencias/.
@@ -29,13 +29,12 @@ if command -v conda >/dev/null 2>&1; then
     conda activate "$ENV_LANZADOR" 2>/dev/null || true
 fi
 
-# nf-core tools hace la descarga; apptainer/singularity construye los .sif
+# nf-core tools hace la descarga y apptainer/singularity construye los archivos .sif
 command -v nf-core >/dev/null 2>&1 \
     || { log_error "no encontré 'nf-core'. Instálalo en el nodo interactivo: pip install nf-core"; exit 1; }
 
 # nf-core 3.0 (oct 2024) movió los comandos de pipeline bajo 'nf-core pipelines'. Las versiones
 # nuevas (4.x) usan 'nf-core pipelines download'; las viejas (<3.0) usan 'nf-core download'.
-# Detectamos cuál acepta esta instalación para no atarnos a una sola.
 if nf-core pipelines download --help >/dev/null 2>&1; then
     NFCORE_DOWNLOAD=(nf-core pipelines download)
 elif nf-core download --help >/dev/null 2>&1; then
@@ -45,7 +44,7 @@ else
     exit 1
 fi
 command -v apptainer >/dev/null 2>&1 || command -v singularity >/dev/null 2>&1 \
-    || { log_error "no encontré apptainer ni singularity aquí; hace falta uno para construir los .sif."; exit 1; }
+    || { log_error "no encontré Apptainer ni Singularity aquí, hace falta uno para construir los .sif."; exit 1; }
 
 DIR_REFERENCIAS="${DIR_REFERENCIAS:-$DIR_PROYECTO/referencias}"
 CACHE="$DIR_REFERENCIAS/imagenes"
@@ -55,7 +54,7 @@ export NXF_SINGULARITY_CACHEDIR="$CACHE"
 export NXF_APPTAINER_CACHEDIR="$CACHE"
 
 log_info "Descargando imágenes de nf-core/ampliseq r${VERSION_PIPELINE} a: $CACHE"
-log_info "(esto tarda: son ~15-20 imágenes; déjalo correr)"
+log_info "(este proceso puede ser tardado)"
 
 # 'amend' deja las imágenes en NXF_SINGULARITY_CACHEDIR (no las copia a otra carpeta).
 # El pipeline en sí se descarga a una carpeta temporal que luego borramos: para correr
@@ -73,8 +72,8 @@ NXF_OFFLINE=false "${NFCORE_DOWNLOAD[@]}" ampliseq \
     --outdir "$TMP_DL/ampliseq_dl"
 
 # --- Bases de datos del marcador ---
-# En un HPC sin internet en los nodos, las bases también hay que bajarlas aquí (nodo
-# interactivo). El pipeline guarda cada base por su nombre de archivo (storeDir), así que si
+# En un HPC sin internet en los nodos, también hay que bajar las bases aquí.
+# El pipeline guarda cada base por su nombre de archivo (storeDir), así que si
 # dejamos el archivo crudo con su nombre original en referencias/bases, la corrida offline lo
 # reutiliza sin volver a bajarlo. Derivamos las URL del marcador activo desde la config del
 # propio pipeline, las mismas que usaría la corrida.

@@ -11,8 +11,8 @@ authors:
   - family-names: "Castañeda-Martínez"
     given-names: "Rubén"
     orcid: "https://orcid.org/0000-0001-9272-7968"
-version: "0.1.1"
-date-released: "2026-06-16"
+version: "0.2.0"
+date-released: "2026-06-21"
 license: MIT
 identifiers:
   - type: doi

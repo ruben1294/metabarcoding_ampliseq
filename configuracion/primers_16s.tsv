@@ -1,5 +1,5 @@
 # Catálogo de primers 16S estándar para metabarcoding de procariotas
-# (referencia; copia las secuencias que uses a configuracion/marcador_16s.yaml)
+# (solo como referencia, copia las secuencias que uses a configuracion/marcador_16s.yaml)
 #
 # preset	region	primer_FW	secuencia_FW	primer_RV	secuencia_RV	referencia
 515F-806R	V4	515F	GTGYCAGCMGCCGCGGTAA	806R	GGACTACNVGGGTWTCTAAT	Parada2016 / Apprill2015 (EMP)

@@ -27,20 +27,17 @@ PROYECTO="prueba_16S"
 # Cada entorno tiene su propio archivo de recursos (ver sección 16).
 ENTORNO="local"
 
-# Nodos donde puede correr el job maestro en el HPC, en orden de preferencia. El
-# maestro es ligero (2 CPU, 4 GB) y puede compartir con nodo27 y nodo28 con las tareas.
+# Nodos donde puede correr el job maestro en el HPC, en orden de preferencia. El job
+# maestro pide pocos recursos (2 CPU, 4 GB) y puede compartir con nodo27 y nodo28 con las tareas.
 # scripts/lanzar_hpc.sh elige el primer nodo vacío. En OMICA son los nodos con
 # Docker: nodo5, nodo27 y nodo28.
 NODOS_MAESTRO="nodo5 nodo27 nodo28"
 
-# Cuenta (grupo) y partición/cola de SLURM. Son tu identidad de cobro en el clúster:
-# si SLURM responde "Invalid account or account/partition combination", aquí se cambia.
-# En OMICA (CICESE) el grupo es 'metagenomica' y la partición 'cicese'; cámbialos al
-# tuyo (p. ej. CUENTA_SLURM="la_paz"). Confírmalos con:
+# Cuenta (grupo) y partición/cola de SLURM, son tu identidad en el clúster.
+# Si SLURM responde "Invalid account or account/partition combination", cámbialos al tuyo. Confírmalos con:
 #   sacctmgr show assoc user=$USER format=Account,Partition
-# Una sola fuente de verdad: de aquí se propagan a recursos_hpc.config (vía variable
-# de entorno), a lanzar_hpc.sh (sbatch) y a precargar_imagenes_docker_hpc.sh (srun).
-# Van con 'export' para que Nextflow las pase al .config de recursos.
+# De aquí se propagan a todos los demás archivos de recursos (a través de variable
+# de entorno).
 export CUENTA_SLURM="metagenomica"
 export PARTICION_SLURM="cicese"
 
@@ -50,9 +47,9 @@ export PARTICION_SLURM="cicese"
 #   "its" = hongos (región ITS).
 #   "16s" = procariotas (gen 16S rDNA).
 #   "18s" = eucariotas (gen 18S rDNA).
-# No importan mayúsculas ni minúsculas: "its", "ITS", "18s" o "18S" valen igual.
+# No importan mayúsculas ni minúsculas: "its", "ITS", "18s" o "18S".
 # Si lo dejas vacío, el script te preguntará al arrancar (02 y 03).
-# Los parámetros de cada marcador (primers, base de datos, región) están en su
+# Los parámetros de cada marcador (primers, base de datos, región, etc.) están en su
 # propio archivo .yaml. Edítalos ahí, no acá (ver sección 16).
 MARCADOR="16s"
 
@@ -60,12 +57,12 @@ MARCADOR="16s"
 # 4) Motor de ejecución (cómo se aíslan los programas)
 # Con "auto" el motor es Docker en local y en HPC (lo predeterminado). Solo
 # cámbialo si quieres forzar otro:
-#   "docker"      = contenedores Docker (local con integración WSL, en HPC corre
+#   "docker"      = contenedores Docker (en local, si usas Windows con WSL, recomiendo Docker Desktop. En HPC corre
 #                   en los nodos de cómputo con Docker).
-#   "singularity" = contenedores Singularity (alternativa en HPC). Usa referencias/ como apptainer.
+#   "singularity" = contenedores Singularity (alternativa en HPC). Usa referencias/ como Apptainer.
 #   "apptainer"   = sucesor de Singularity. Las imágenes .sif y las bases se precargan una vez
-#                   y se reutilizan desde referencias/. OJO: apptainer y singularity necesitan
-#                   que el HPC tenga apptainer setuid o user namespaces habilitados en el kernel.
+#                   y se reutilizan desde referencias/. OJO: Apptainer y Singularity necesitan
+#                   que el HPC tenga Apptainer setuid o user namespaces habilitados en el kernel.
 #                   OMICA hoy no los tiene, así que ahí usa "docker" (ver README, "HPC de OMICA").
 #   "conda"       = un entorno conda por herramienta, sin contenedor (más lento).
 MOTOR="auto"
@@ -77,18 +74,22 @@ ENV_LANZADOR="ampliseq-lanzador"
 # recursos_hpc.config).
 NODOS_TAREAS_DOCKER="nodo27 nodo28"
 
-# Solo para motores apptainer y singularity: carpeta única donde el pipeline guarda y reutiliza
+# Solo para motores Apptainer y Singularity: carpeta única donde el pipeline guarda y reutiliza
 # lo pesado, para no rebajarlo en cada corrida:
 #   referencias/imagenes  imágenes .sif de los contenedores (NXF_SINGULARITY_CACHEDIR)
-#   referencias/bases     bases taxonómicas que baja el pipeline (--ref_taxonomy_storage)
-# Por defecto cuelga del proyecto. En HPC, si los nodos de cómputo no ven el proyecto o no
+#   referencias/bases     bases taxonómicas que el pipeline descarga (--ref_taxonomy_storage)
+# En un HPC, si los nodos de cómputo no ven el proyecto o no
 # puedes escribir ahí, apúntala a una carpeta tuya en LUSTRE (compartida y con escritura).
-# Vacía = referencias/ dentro del proyecto.
+# Vacía = la carpeta de referencias/ va adentro del proyecto.
 DIR_REFERENCIAS=""
 
-# Raíz de bases compartidas en LUSTRE (solo lectura). De aquí solo LEES bases ya montadas por
-# tu clúster, si decides apuntar dada_ref_tax_custom a ellas en el YAML del marcador. No la
-# confundas con DIR_REFERENCIAS, que sí necesita escritura.
+# Carpeta en LUSTRE donde están las bases de referencia para el HPC. Sirve con cualquier
+# motor (también docker): en el YAML del marcador apuntas dada_ref_tax_custom (o
+# qiime_ref_tax_custom) a archivos dentro de ella. Pueden estar ya montadas por tu clúster,
+# o las precargas tú una vez en el nodo interactivo (para eso necesitas escritura ahí).
+# No confundir con DIR_REFERENCIAS: esa es la caché que
+# el pipeline llena y reutiliza solo (imágenes .sif y bases, con Apptainer o Singularity).
+# DIR_BASES_HPC la gestionas tú a mano.
 DIR_BASES_HPC="/LUSTRE/bioinformatica_data/BD/metagenomica"
 
 
@@ -101,13 +102,13 @@ VERSION_NEXTFLOW=""           # Nextflow: vacío instala siempre la más recient
 # Carpeta con los FASTQ crudos (.fastq.gz). Si tus muestras vienen de varias corridas de
 # secuenciación, ponlas en una subcarpeta por corrida (datos/crudos/corrida1/, corrida2/…):
 # el script 01 llena la columna run con el nombre de la subcarpeta y ampliseq separa el
-# modelo de error de DADA2 por corrida. Sueltas aquí = una sola corrida (run "1").
+# modelo de error de DADA2 por corrida.
 CARPETA_FASTQ="datos/crudos"
 
 # Diseño de las lecturas:
 #   "paired" = pareadas (R1 + R2).
 #   "single" = individuales (solo R1).
-DISENO_LECTURAS="paired"
+DISENO_LECTURAS="single"
 
 # Hoja de muestras que genera el script 01 a partir de CARPETA_FASTQ.
 SAMPLESHEET="configuracion/samplesheet.tsv"
@@ -116,7 +117,7 @@ SAMPLESHEET="configuracion/samplesheet.tsv"
 #   "si" = usa SAMPLESHEET   |   "no" = usa CARPETA_FASTQ
 USAR_SAMPLESHEET="si"
 
-# ¿Correr cutadapt dos veces para quitar primers dobles/concatenados?
+# ¿Correr cutadapt dos veces para quitar primers dobles o concatenados?
 #   "si": activa --double_primer
 DOBLE_PRIMER="no"
 
@@ -136,13 +137,13 @@ IGNORAR_RECORTE_FALLIDO="no"
 
 
 # 7) Recorte y filtrado de calidad de lecturas (DADA2)
-# Longitud a la que se truncan las lecturas FW. 0 = sin truncado (auto según TRUNC_QMIN). Depende de la región del marcador a analizar, pero como regla general, se sugiere usar 150 pb e ir ajustando dependiendo de la calidad obtenida. --trunclenf
-TRUNCLENF="150"
+# Longitud a la que se truncan las lecturas FW. 0 = sin truncado (auto según TRUNC_QMIN). Depende de la región del marcador a analizar, del PCR realizado y de la calidad obtenida. --trunclenf
+TRUNCLENF="0"
 
-# Longitud a la que se truncan las lecturas RV (solo pareadas). Depende de la región del marcador a analizar, pero como regla general, se sugiere usar 150 pb e ir ajustando dependiendo de la calidad obtenida. 0 = sin truncado. --trunclenr
-TRUNCLENR="150"
+# Longitud a la que se truncan las lecturas RV (solo pareadas). Depende de la región del marcador a analizar y del PCR realizado y de la calidad obtenida. 0 = sin truncado. --trunclenr
+TRUNCLENR="0"
 
-# Calidad mínima (phred) para el truncado automático cuando TRUNCLENF/R = 0. --trunc_qmin
+# Calidad mínima (phred score) para el truncado automático cuando TRUNCLENF/R = 0. --trunc_qmin
 TRUNC_QMIN="25"
 
 # Fracción mínima de lecturas que el truncado automático debe conservar. --trunc_rmin
@@ -179,7 +180,7 @@ VSEARCH_CLUSTER_ID="0.97"
 # Filtrar ASVs por SSU rDNA con barrnap, vacío = sin filtro (ej. bac,arc,mito,euk). --filter_ssu
 FILTER_SSU=""
 
-# Longitud mínima de ASV (pb); vacío = sin filtro. --min_len_asv
+# Longitud mínima de ASV (pb), vacío = sin filtro. --min_len_asv
 MIN_LEN_ASV=""
 
 # Longitud máxima de ASV (pb), vacío = sin filtro. --max_len_asv
@@ -192,7 +193,7 @@ FILTER_CODONS="no"
 # Inicio del marco de lectura (ORF) para el filtro de codones. --orf_start
 ORF_START="1"
 
-# Fin del marco de lectura (ORF); vacío = hasta el final. --orf_end
+# Fin del marco de lectura (ORF), vacío = hasta el final. --orf_end
 ORF_END=""
 
 # Codones de paro para el filtro. --stop_codons
@@ -263,7 +264,7 @@ REPORT_TITLE="Reporte de resultados de mi análisis de metabarcoding"
 
 # 15) Salida
 # Carpeta de resultados. Cada proyecto va en su propia subcarpeta (resultados/<PROYECTO>/).
-# El nombre lo toma de PROYECTO (sección 1).
+# El nombre lo toma de la variable PROYECTO (sección 1).
 SALIDA="resultados/$PROYECTO"
 
 # Carpeta de logs de los scripts (.out, .err, comando y versiones), también por proyecto.
@@ -273,7 +274,7 @@ DIR_LOGS="logs/$PROYECTO"
 #   "si": activa --save_intermediates
 GUARDAR_INTERMEDIOS="si"
 
-# Correo para el resumen que ampliseq manda al terminar.
+# Correo para el resumen que ampliseq manda al terminar. Tu HPC debe tener un sistema de notificaciones por correo configurado.
 EMAIL=""
 
 
@@ -291,7 +292,7 @@ CONFIG_18S="configuracion/marcador_18s.yaml"
 
 # 17) Parámetros extra (avanzado, opcional)
 # Banderas adicionales de nf-core/ampliseq tal cual, se pasan por CLI y mandan sobre
-# el params-file. Si algo ya tiene su variable arriba, edita la variable, no esto.
+# el params-file. Si algo ya tiene su variable arriba, sugiero que edites la variable, no esto.
 #   "--pacbio"                    → lecturas PacBio en vez de Illumina
 #   "--multiple_sequencing_runs"  → varias corridas SOLO con entrada por carpeta (USAR_SAMPLESHEET="no").
 #                                   Con hoja de muestras no hace falta: usa la columna run (subcarpetas, sección 6).

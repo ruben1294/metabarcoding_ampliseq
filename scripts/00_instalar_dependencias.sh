@@ -4,9 +4,8 @@
 #  Autor: Rubén Castañeda-Martínez
 # -----------------------------------------------------------------------------
 #  Prepara lo necesario para correr nf-core/ampliseq: Java 17 y Nextflow, en un
-#  entorno conda aislado (ENV_LANZADOR). El motor predeterminado es Docker, que no
-#  se instala aquí (en local lo da Docker Desktop; en HPC vive en los nodos de
-#  cómputo). Es idempotente: puedes correrlo varias veces sin problema.
+#  entorno conda aislado (ENV_LANZADOR). El motor predeterminado es Docker.
+#  Es idempotente: puedes correrlo varias veces sin problema.
 #
 #  Uso:   bash scripts/00_instalar_dependencias.sh
 #         bash scripts/00_instalar_dependencias.sh --entorno hpc   (sobreescribe parametros.sh)
@@ -141,9 +140,9 @@ log_info "Paquetes a instalar: ${PAQUETES[*]}"
 # Paquetes de respaldo (sin versión fija) por si falla usar la versión exacta.
 PAQUETES_FLEX=( "openjdk=17" "nextflow" )
 
-# Apagamos nounset durante las operaciones de conda: install/update/create activan de
+# Apagamos temporalmente nounset durante las operaciones de conda, ya que install/update/create activan de
 # paso el entorno base, cuyos scripts de activación (p. ej. qt-main_activate.sh) leen
-# variables sin definir y con 'set -u' eso abortaría el script. Lo reactivamos al final.
+# variables sin definir y con 'set -u' eso abortaría el script.
 set +u
 
 # 4) Crear o actualizar el entorno
@@ -172,19 +171,19 @@ log_info "Entorno '$ENV_LANZADOR' activo."
 # 4b) Apptainer como paso aparte y best-effort. Lo separamos del install crítico para que
 # un fallo (típico en HPC, donde el apptainer de conda-forge no siempre funciona sin
 # setuid/namespaces) no aborte el script ni arrastre a Java/Nextflow. Si falla, lo avisamos
-# y seguimos. El detalle y la sugerencia de 'module load' los da el punto 5b.
+# y seguimos.
 if [ "$INSTALAR_APPTAINER" = "si" ]; then
     log_info "Apptainer no está en el PATH. Intento instalarlo por conda…"
     if conda install -n "$ENV_LANZADOR" -y apptainer; then
         log_info "Apptainer instalado por conda."
     else
-        log_warn "No se pudo instalar Apptainer por conda. Continúo sin abortar (ver punto 5b)."
+        log_warn "No se pudo instalar Apptainer por conda. Continúo sin abortar."
     fi
 fi
 
 # 5) nf-core tools (opcional, no es indispensable para ejecutar el flujo)
 # El solver clásico de conda se atora resolviendo el árbol de nf-core, forzamos
-# libmamba (rápido) y, con timeout, evitamos que se quede atorado. Si falla, usamos pip.
+# libmamba (rápido) y si falla, usamos pip.
 if ! command -v nf-core >/dev/null 2>&1; then
     log_info "Instalando nf-core tools…"
     timeout 600 conda install -n "$ENV_LANZADOR" -y --solver=libmamba nf-core \
@@ -214,7 +213,7 @@ case "$MOTOR" in
             log_info "Singularity disponible: $(singularity --version 2>&1)"
         elif [ "$ENTORNO" = "hpc" ]; then
             log_warn "No encontré Singularity/Apptainer. En el clúster suele cargarse con un"
-            log_warn "  módulo (p. ej. module load apptainer); cárgalo y revisa con el script 02."
+            log_warn "  módulo (p. ej. module load apptainer). Cárgalo y revisa con el script 02."
         else
             log_warn "No se encontró 'apptainer' a pesar de haber intentado instalarlo."
         fi
@@ -224,7 +223,7 @@ case "$MOTOR" in
         ;;
 esac
 
-# 6) Variables de caché en el disco grande (evita llenar el disco del SO). Con apptainer o
+# 6) Variables de caché en el disco grande. Con apptainer o
 # singularity las imágenes van en referencias/imagenes, la misma ruta que usan el script 03 y
 # el precargado. En el resto, la caché del proyecto.
 if [ "$MOTOR" = "apptainer" ] || [ "$MOTOR" = "singularity" ]; then
@@ -236,14 +235,13 @@ export NXF_APPTAINER_CACHEDIR="$NXF_SINGULARITY_CACHEDIR"
 export NXF_CONDA_CACHEDIR="$DIR_PROYECTO/.cache/conda"
 mkdir -p "$NXF_SINGULARITY_CACHEDIR" "$NXF_CONDA_CACHEDIR"
 
-# 7) Precargamos el pipeline en la caché (~/.nextflow/assets). Imprescindible en HPC:
-# los nodos de cómputo no tienen internet, así que el maestro corre offline y usa
+# 7) Precargamos el pipeline en la caché (~/.nextflow/assets), imprescindible en HPC.
+# Los nodos de cómputo normalmente no tienen internet, así que el job maestro corre offline y usa
 # este precargado. Hazlo en el nodo interactivo (el único con salida a internet).
 log_info "Descargando nf-core/ampliseq r${VERSION_PIPELINE} a la caché local…"
-# Forzamos NXF_OFFLINE=false por si el clúster lo trae activado por defecto (eso
-# bloquearía la descarga aunque aquí sí haya internet).
+# Forzamos NXF_OFFLINE=false por si el clúster lo trae activado por defecto
 NXF_OFFLINE=false nextflow pull nf-core/ampliseq -r "${VERSION_PIPELINE}" \
-  || log_warn "No se pudo precargar el pipeline. En local se baja en la primera corrida; en HPC el maestro fallará offline hasta que esto funcione (corre con internet)."
+  || log_warn "No se pudo precargar el pipeline. En local se baja en la primera corrida, en HPC el job maestro fallará offline hasta que esto funcione (corre con internet)."
 
 # 8) Verificamos e imprimimos versiones
 log_info "--------------------------------------------------------------------------"

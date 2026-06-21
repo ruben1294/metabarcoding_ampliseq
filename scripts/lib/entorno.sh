@@ -16,8 +16,8 @@ seleccionar_entorno() {
         if [ -t 0 ]; then
             echo
             echo "¿Dónde correrás el análisis?"
-            echo "  1) local  → tu computadora (Docker, núcleos de la máquina)"
-            echo "  2) hpc    → clúster con SLURM (Docker en los nodos de cómputo, cola de trabajos)"
+            echo "  1) local: tu computadora (Docker y núcleos de la computadora)"
+            echo "  2) hpc: clúster con SLURM (Docker u otro motor en los nodos de cómputo y cola de trabajos)"
             read -r -p "Elige [1/2]: " resp
             case "$resp" in
                 1|local|Local|LOCAL|l) ENTORNO="local" ;;
@@ -36,8 +36,8 @@ seleccionar_entorno() {
         *) log_error "ENTORNO no válido: '$ENTORNO' (usa local o hpc)"; exit 1 ;;
     esac
 
-    # Motor por defecto: Docker en local y en HPC (en OMICA, Docker vive en
-    # nodo27 y nodo28). Cámbialo en parametros.sh solo si quieres forzar otro.
+    # Motor por defecto: Docker en local y en HPC.
+    # Cámbialo en parametros.sh solo si quieres forzar otro.
     if [ "${MOTOR:-auto}" = "auto" ]; then
         MOTOR="docker"
     fi

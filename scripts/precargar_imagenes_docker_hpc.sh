@@ -70,7 +70,7 @@ if [ "$N" -eq 0 ]; then
 fi
 log_info "$N imágenes a precargar. Lista en: $LISTA"
 
-# 2) docker pull en cada nodo, con reintentos (la lista vive en $HOME, visible por srun)
+# 2) docker pull en cada nodo, con reintentos
 for n in "${NODOS[@]}"; do
     log_info "=========================================================================="
     log_info "Precargando imágenes en $n …"
@@ -89,6 +89,6 @@ done
 
 log_info "=========================================================================="
 log_info "Listo. Si alguna quedó 'fallida', vuelve a correr este script: las ya"
-log_info "descargadas se saltan al instante (docker pull es idempotente)."
-log_info "Luego lanza el maestro con: bash scripts/lanzar_hpc.sh"
+log_info "descargadas se saltan al instante."
+log_info "Después, corre el job maestro con: bash scripts/lanzar_hpc.sh"
 log_info "=========================================================================="

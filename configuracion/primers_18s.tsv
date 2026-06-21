@@ -1,5 +1,5 @@
 # Catálogo de primers 18S estándar para metabarcoding de eucariotas
-# (referencia, copia las secuencias que uses a configuracion/marcador_18s.yaml)
+# (solo como referencia, copia las secuencias que uses a configuracion/marcador_18s.yaml)
 #
 # preset	region	primer_FW	secuencia_FW	primer_RV	secuencia_RV	referencia
 TAReuk-V4	V4	TAReuk454FWD1	CCAGCASCYGCGGTAATTCC	TAReukREV3	ACTTTCGTTCTTGATYRA	Stoeck2010

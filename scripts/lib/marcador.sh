@@ -3,8 +3,8 @@
 #  marcador.sh
 #  Autor: Rubén Castañeda-Martínez
 # -----------------------------------------------------------------------------
-#  Resuelve qué marcador se analiza: ITS (hongos), 16S (procariotas) o 18S
-#  (microeucariotas). A partir de esa decisión elige el archivo de parámetros
+#  Resuelve qué marcador se analiza: ITS, 16S o 18S.
+#  A partir de esa decisión elige el archivo de parámetros
 #  (YAML) que recibe Nextflow. Lo llaman los scripts 02 y 03.
 # =============================================================================
 
@@ -16,8 +16,8 @@ seleccionar_marcador() {
             echo
             echo "¿Qué marcador vas a analizar?"
             echo "  1) its  → hongos (región ITS, base UNITE)"
-            echo "  2) 16s  → procariotas (gen 16S rRNA, base SILVA)"
-            echo "  3) 18s  → microeucariotas/protistas (gen 18S rRNA, base PR2)"
+            echo "  2) 16s  → procariotas (gen 16S rDNA, base SILVA)"
+            echo "  3) 18s  → microeucariotas/protistas (gen 18S rDNA, base PR2)"
             read -r -p "Elige [1/2/3]: " resp
             case "$resp" in
                 1|its|ITS|i)  MARCADOR="its" ;;
@@ -32,7 +32,7 @@ seleccionar_marcador() {
         fi
     fi
 
-    # Aceptamos el marcador en mayúsculas o minúsculas (ITS, 18S, etc.), lo normalizamos.
+    # Aceptamos el marcador en mayúsculas o minúsculas (ITS, 18S, etc.) y lo normalizamos.
     MARCADOR="$(printf '%s' "$MARCADOR" | tr '[:upper:]' '[:lower:]')"
 
     case "$MARCADOR" in
@@ -67,9 +67,8 @@ leer_yaml() {
     printf '%s' "$val"
 }
 
-# leer_taxonomia <archivo>: devuelve la base taxonómica activa del YAML, venga del
-# clasificador que venga (DADA2, QIIME2 o SINTAX), con el clasificador entre
-# paréntesis. El marcador no fija de antemano la clave: 18S puede ir por PR2
+# leer_taxonomia <archivo>: devuelve la base de datos taxonómica activa del YAML,
+# con el clasificador entre paréntesis. El marcador no fija de antemano la clave: 18S puede ir por PR2
 # (dada_ref_taxonomy) o por SILVA (qiime_ref_taxonomy). Vacío si no hay ninguna.
 leer_taxonomia() {
     local arch="$1" val

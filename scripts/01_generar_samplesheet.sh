@@ -10,7 +10,7 @@
 #     sample  <tab>  fastq_1  <tab>  fastq_2  <tab>  run
 #
 #  La columna run es la corrida de secuenciación de cada muestra: ampliseq separa el
-#  modelo de error de DADA2 por corrida (mezclarlas lo degrada). Su valor es el nombre
+#  modelo de error de DADA2 por corrida. Su valor es el nombre
 #  de la subcarpeta inmediata dentro de CARPETA_FASTQ (una subcarpeta por corrida), o
 #  "1" si los FASTQ están sueltos en CARPETA_FASTQ (una sola corrida, el caso por
 #  defecto). Si lo prefieres, edita la columna run a mano después de generar la hoja.
@@ -181,7 +181,7 @@ for r1 in "${R1S[@]}"; do
 done
 
 # ampliseq abortaría a mitad de corrida si encuentra dos nombres de muestra repetidos, así que lo
-# corregimos aquí. Pasa si dos FASTQ diferentes se cambian al mismo nombre.
+# corregimos aquí.
 dups="$(cut -f1 "$SAMPLESHEET" | tail -n +2 | sort | uniq -d)"
 if [ -n "$dups" ]; then
     log_error "Nombres de muestra repetidos en $SAMPLESHEET:"
